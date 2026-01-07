@@ -3,12 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Oficinas de Robótica</title>
-    <!-- Tailwind CSS -->
+    <title>Oficinas de Robótica - SJB</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
-    <!-- React & Lucide Icons via CDN -->
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -20,40 +17,41 @@
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         
         @media print {
-            /* Regra de Ouro: Esconde tudo o que não for o modal de planejamento */
-            body > *:not(#root) { display: none !important; }
-            #root > div > *:not(.modal-container) { display: none !important; }
+            body * { visibility: hidden; }
             .no-print { display: none !important; }
-
-            /* Garante que o container do modal ocupe a página toda sem overlays */
-            .modal-container {
+            .modal-content-to-print, .modal-content-to-print * { visibility: visible; }
+            .modal-content-to-print {
                 position: absolute !important;
                 left: 0 !important;
                 top: 0 !important;
                 width: 100% !important;
-                height: auto !important;
-                background: white !important;
+                display: block !important;
                 padding: 0 !important;
                 margin: 0 !important;
-                display: block !important;
+                background: white !important;
+                box-shadow: none !important;
+                max-height: none !important;
+                overflow: visible !important;
             }
-
-            /* Remove bordas arredondadas e sombras para impressão limpa */
-            .rounded-[2rem], .rounded-3xl, .rounded-2xl { border-radius: 0.5rem !important; }
-            .shadow-2xl, .shadow-xl { box-shadow: none !important; }
-
-            /* Estilo dos blocos na impressão */
             .print-border { 
                 border: 1px solid #e2e8f0 !important; 
-                margin-bottom: 1rem !important;
+                border-radius: 8px !important;
+                margin-bottom: 12px !important;
                 page-break-inside: avoid;
             }
-            
-            .bg-slate-900 { background: #000 !important; color: #fff !important; -webkit-print-color-adjust: exact; }
-            .bg-blue-50\/50 { background: #f8fafc !important; border: 1px solid #e2e8f0 !important; -webkit-print-color-adjust: exact; }
-
-            /* Forçar visibilidade de textos de inputs */
-            .print-text { display: block !important; }
+            .bg-slate-900 { 
+                background: #000 !important; 
+                color: #fff !important; 
+                -webkit-print-color-adjust: exact; 
+                padding: 20px !important;
+            }
+            .bg-blue-50\/50 { 
+                background: #f8fafc !important; 
+                border: 1px solid #e2e8f0 !important; 
+                -webkit-print-color-adjust: exact; 
+            }
+            input, textarea { display: none !important; }
+            .print-value { display: block !important; font-weight: bold; padding: 4px 0; border-bottom: 1px solid #ccc; }
         }
     </style>
 </head>
@@ -70,97 +68,280 @@
             return <i data-lucide={name} className={className} style={{ width: size, height: size }}></i>;
         };
 
-        const generateFullDatabase = () => {
-            const db = [];
-            const years = ["1º Ano", "2º Ano", "3º Ano", "4º Ano", "5º Ano", "6º Ano", "7º Ano", "8º Ano", "9º Ano"];
-            const bnccCodes = ["EF15C008", "EF01MA15", "EF02CI01", "EF03MA04", "EF04CI03", "EF05CI11", "EF06MA10", "EF07CO03", "EF08CO04", "EF09CO01"];
-            const temasBase = [
-                "Conhecendo o Kit", "Elementos Funcionais", "Engrenagens", "Polias", "Alavancas", 
-                "Tração Animal", "Sensores de Toque", "Sensores de Cor", "Motores e Rotação", "Programação em Bloco",
-                "Loop Infinito", "Condicionais", "Variáveis", "Lógica de Movimento", "Desafio do Labirinto",
-                "Robô Seguidor de Linha", "Braço Hidráulico", "Elevador de Carga", "Energia Solar", "Torneio Final"
-            ];
+        // BANCO DE DADOS CORRIGIDO CONFORME PLANILHAS OFICIAIS
+        const getDatabaseFromSheets = () => {
+            const kitEssential = "Kit LEGO® Education SPIKE Essential";
+            const kitPrime = "Kit LEGO® Education SPIKE Prime";
+            
+            const raw = {
+                "1º Ano": [
+                    ["Conhecendo o Kit", "EF15C008", "Discutir robótica e tecnologias, manusear o kit LEGO® e criar uma solução para a travessia de um rio.", kitEssential],
+                    ["Elementos Funcionais", "EF15C008", "Manusear o kit, identificar e comparar elementos funcionais e construir um carro movido a vento.", kitEssential],
+                    ["Classificando e Seriando", "EF01C001, EF01MA09, EF01MA15", "Compreender a importância de classificar e seriar peças do kit para montar casas geminadas.", kitEssential],
+                    ["Meios de Transporte Terrestre", "EF01C001, EF01C006", "Identificar meios de transporte, entender a importância de elementos funcionais e montar um lançador de carros.", kitEssential],
+                    ["O que Rola e o que Não Rola: Rampa", "EF01C001, EF01MA09, EF01MA13", "Identificar a importância de rampas, reconhecer figuras geométricas e testar objetos que rolam em uma rampa.", kitEssential],
+                    ["Identidade nos Dispositivos: Myself", "EF01C004, EF01C006, EF01C007, EF01C104", "Entender que somos únicos, refletir sobre a segurança digital e criar acessórios com LEGO®.", kitEssential],
+                    ["Moradias e Seus Materiais: Telhados", "EF01C001, EF01CI01", "Identificar tipos de moradias e materiais e montar diferentes telhados com LEGO®.", kitEssential],
+                    ["A Casa e Seus Cômodos", "EF01C001, EF01MA14", "Identificar cômodos da casa, entender sua função e montar um cômodo com LEGO®.", kitEssential],
+                    ["Escola: Um Espaço de Convivência", "EF01C006, EF01GE03, EF01HI08", "Reconhecer a escola como espaço social e montar uma maquete da escola.", kitEssential],
+                    ["Regras de Convivência: Semáforo", "EF01C006, EF01MA20", "Entender a importância de regras e sinais de trânsito e montar um semáforo com LEGO®.", kitEssential],
+                    ["O Corpo Humano: Boneco Articulado", "EF01C001, EF01CI02", "Identificar partes do corpo humano e montar um boneco articulado.", kitEssential],
+                    ["Animais e Seus Habitats", "EF01C001, EF01CI04", "Conhecer diferentes animais e seus ambientes e montar um animal com LEGO®.", kitEssential],
+                    ["Plantas: Partes e Funções", "EF01C001, EF01CI05", "Identificar as partes das plantas e suas funções e montar uma planta com LEGO®.", kitEssential],
+                    ["Pontes e Passarelas", "EF01C001, EF01GE01", "Discutir a importância de pontes, entender a tecnologia e montar uma ponte móvel.", kitEssential],
+                    ["Espaço Público Urbano: Praça", "EF01C006, EF01GE01, EF01GE03", "Analisar características de praças e montar uma praça com LEGO®.", kitEssential],
+                    ["Teleférico", "EF01C001, EF01MA09, EF15AR23", "Conhecer a importância do teleférico como transporte e montar um com LEGO®.", kitEssential],
+                    ["Daqui eu Não Saio: Cofre", "EF01C007", "Conhecer o uso de cofres, associar à segurança online e montar um cofre com LEGO®.", kitEssential],
+                    ["Algoritmo Bagunçado", "EF01C003, EF15LP05, EF15LP18", "Entender algoritmos construindo objetos com instruções aleatórias.", kitEssential],
+                    ["Acesso Autorizado: Catraca", "EF01C006, EF01MA20", "Conhecer o uso social das catracas e montar uma catraca para controle de acesso.", kitEssential],
+                    ["Proteção: Criptografia", "EF01C004, EF01MA01", "Entender a criptografia para segurança de dados e montar um sistema de proteção.", kitEssential]
+                ],
+                "2º Ano": [
+                    ["Contextualizando a Robótica", "EF15C006", "Discutir robótica e tecnologias, manusear o kit Essential e criar solução para travessia.", kitEssential],
+                    ["Software Spike App", "EF15C002", "Compreender software e hardware, algoritmo e iniciar programação.", kitEssential],
+                    ["Animal", "EF03C004, EF03C106", "Perceber características de animais, classificação e montar animal robótico.", kitEssential],
+                    ["Conexões, Eixos e Encaixes", "EF02C001", "Identificar tipos de conexões, relacionar com construção civil e criar estrutura.", kitEssential],
+                    ["O Adestrador de Animais", "EF02C001, EF02C104", "Identificar características de cães, relação com humanos e montar centro de treinamento.", kitEssential],
+                    ["Com o Passar do Tempo", "EF02C001, EF02C005, EF02GE05", "Analisar mudanças em paisagens, refletir sobre passado e presente e construir cenários.", kitEssential],
+                    ["Mudanças na Cidade", "EF02C001, EF02C005, EF02GE05", "Refletir sobre crescimento das cidades e montar via urbana com LEGO®.", kitEssential],
+                    ["Onde Estou?", "EF02C005, EF02GE08, EF02GE09", "Trabalhar localização, pontos de referência e montar mapa 3D.", kitEssential],
+                    ["Transporte de Passageiros", "EF02C001, EF02HI10", "Conhecer evolução dos transportes e criar veículo de passageiros.", kitEssential],
+                    ["Prevenção de Acidentes", "EF02C001, EF02CI03", "Discutir segurança doméstica e montar armário de segurança.", kitEssential],
+                    ["O Ciclo da Água", "EF02C001, EF02CI05", "Compreender ciclo da água e montar simulador de chuva.", kitEssential],
+                    ["Energia Limpa: Eólica", "EF02C001, EF02CI01", "Entender fontes de energia e montar aerogerador.", kitEssential],
+                    ["Brinquedos de Antigamente", "EF02C001, EF02HI05", "Comparar brinquedos de épocas e montar pião mecânico.", kitEssential],
+                    ["Elevador", "EF02C001, EF02MA15", "Entender papel social dos elevadores e criar modelo motorizado.", kitEssential],
+                    ["Máquinas e Suas Funcionalidades", "EF02C001, EF02C002, EF02C003", "Identificar uso de máquinas no trabalho e criar braço robótico.", kitEssential],
+                    ["Empilhadeira", "EF02C001, EF02C003, EF02GE07", "Importância das máquinas em atividades extrativas e criar empilhadeira.", kitEssential],
+                    ["Aparelhos Sonoros", "EF02C001, EF15AR15", "Identificar ondas sonoras e criar tocador de disco.", kitEssential],
+                    ["Sistema Monetário: Vendinha", "EF02C001, EF02MA20", "Compreender dinheiro e comércio e criar uma vendinha.", kitEssential],
+                    ["Hardware e Software: Drone", "EF02C003, EF02C004, EF02C005", "Diferenciar hardware de software e criar modelo de drone.", kitEssential],
+                    ["Relógio Analógico: Engrenagens", "EF02C001, EF02C005, EF02HI07", "Entender funcionamento de engrenagens e criar relógio analógico.", kitEssential]
+                ],
+                "3º Ano": [
+                    ["Oficina Introdutória: Robótica", "EF15C006", "Compreender conceito de robótica e aplicabilidade social.", kitEssential],
+                    ["Oficina Introdutória: Software", "EF15C002", "Conceitos de hardware, software e definição de algoritmo.", kitEssential],
+                    ["Animal", "EF03C004, EF03C106", "Perceber características de animais e montar animal robótico.", kitEssential],
+                    ["Atletismo", "EF03C003, EF35EF06", "Diferenciar jogo de esporte e montar pista de corrida.", kitEssential],
+                    ["Luz e Sombra", "EF03C002, EF03C102", "Diferenciar luz natural e artificial e montar um farol.", kitEssential],
+                    ["Som e Vibração", "EF03C002, EF03CI01", "Entender produção do som e montar instrumento musical.", kitEssential],
+                    ["Poluição Sonora", "EF03C002, EF03CI03", "Impactos do som na saúde e montar medidor de ruído.", kitEssential],
+                    ["Fontes de Energia", "EF03C002, EF03CI01", "Identificar fontes de energia e montar moinho.", kitEssential],
+                    ["Meios de Comunicação", "EF03C006, EF03HI08", "Evolução da comunicação e montar rádio ou telefone.", kitEssential],
+                    ["O Campo e a Cidade", "EF03C003, EF03GE01", "Diferenciar paisagens e montar fazenda automatizada.", kitEssential],
+                    ["Transformação da Matéria", "EF03C002, EF03CI01", "Entender mudanças físicas e montar misturador.", kitEssential],
+                    ["Sistema Solar", "EF03C002, EF03CI08", "Conhecer planetas e montar simulador de órbita.", kitEssential],
+                    ["Navegação", "EF03C003, EF03HI09", "História das navegações e montar barco a vela.", kitEssential],
+                    ["Transporte Público", "EF03C003, EF03GE03", "Espaços públicos e montar ônibus público.", kitEssential],
+                    ["Iluminação", "EF03C002, EF03HI08", "História da iluminação e montar sistema automático.", kitEssential],
+                    ["Informações Não Físicas", "EF03C006, EF03C007", "Componentes de computador e montar sistema de comunicação.", kitEssential],
+                    ["Luz, Câmera, Ação! Cinema", "EF03C002, EF03HI12", "História do cinema e montar sala de cinema.", kitEssential],
+                    ["Hóquei", "EF03C002, EF35EF05", "Regras do hóquei e montar jogo robótico.", kitEssential],
+                    ["Minas Gerais Inclusiva", "EF03C004, EF03C006", "Acessibilidade em cidades e montar rampa de acesso.", kitEssential],
+                    ["Reciclê", "EF03C003, EF03GE08", "Coleta seletiva e montar recipiente automatizado.", kitEssential],
+                    ["Jornal Robótico", "EF03C006", "Criação de notícias e meios de comunicação digitais.", kitEssential]
+                ],
+                "4º Ano": [
+                    ["Oficina Introdutória: Robótica", "EF15C006", "Manusear kit Essential e criar solução de travessia.", kitEssential],
+                    ["Oficina Introdutória: Software", "EF15C002", "Hardware, software e programação em blocos.", kitEssential],
+                    ["Órgãos Públicos", "EF04C006, EF04GE03", "Função dos órgãos públicos e construir ágora.", kitEssential],
+                    ["Diáspora Nordestina: Transporte", "EF04C006, EF04HI09", "Migrações e criar protótipo de transporte.", kitEssential],
+                    ["Sistemas de Arte: Lygia Clark", "EF04C003, EF15AR07", "Neoconcretismo e criar escultura interativa.", kitEssential],
+                    ["Diáspora Nordestina: Forró", "EF04C002, EF04HI09", "História do forró e montar palco musical.", kitEssential],
+                    ["Caminhos da Escrita", "EF04C002, EF04HI08", "Evolução da escrita e montar máquina de escrever.", kitEssential],
+                    ["Propagação do Som", "EF04C001, EF04CI01", "Como o som viaja e montar protótipo de alto-falante.", kitEssential],
+                    ["Misturas no Dia a Dia", "EF04C001, EF04CI01", "Misturas homogêneas e heterogêneas e montar agitador.", kitEssential],
+                    ["Ciclo da Água na Natureza", "EF04C003, EF04CI03", "Simular ciclo da água com modelo mecânico.", kitEssential],
+                    ["Cadeia Alimentar", "EF04C001, EF04CI04", "Relações entre seres vivos e montar ecossistema.", kitEssential],
+                    ["Microrganismos", "EF04C001, EF04CI06", "Bactérias e fungos e montar modelo de microscópio.", kitEssential],
+                    ["Mapas e Legendas", "EF04C003, EF04GE09", "Mapas e legendas e montar leitor de mapas.", kitEssential],
+                    ["Bússola", "EF04C003, EF04GE09", "Pontos cardeais e montar bússola robótica.", kitEssential],
+                    ["Labirinto e os Pontos Cardeais", "EF04C003, EF04C110", "Pontos cardeais e criar modelo de labirinto.", kitEssential],
+                    ["Brinquedos e Brincadeiras", "EF04C003, EF15AR24", "Importância do brincar e criar jogo de pinball.", kitEssential],
+                    ["Pique-Bandeira", "EF04C001, EF35EF05", "Regras e construir placar digital.", kitEssential],
+                    ["Codificação da Informação", "EF04C004, EF04MA02", "Bases numéricas e codificação de cores.", kitEssential],
+                    ["Autoria sobre os Arquivos", "EF04C007, EF04C008", "Ética da informação e criar verificador de autoria.", kitEssential],
+                    ["Inclusão Digital", "EF04C011, EF04GE01", "Desigualdades digitais e montar centro de acesso.", kitEssential],
+                    ["Segurança na Rede", "EF04C008", "Práticas seguras de navegação e proteção de dados.", kitEssential]
+                ],
+                "5º Ano": [
+                    ["Oficina Introdutória: Robótica", "EF15C006", "Tecnologias e kit Essential para travessia.", kitEssential],
+                    ["Oficina Introdutória: Software", "EF15C002", "Hardware, software e algoritmos.", kitEssential],
+                    ["Conhecendo o Coração", "EF05C004, EF05C107", "Sistema cardiovascular e modelo de coração.", kitEssential],
+                    ["Povos Ribeirinhos", "EF05C011, EF05HI04", "Cultura ribeirinha e sensor de cheias.", kitEssential],
+                    ["Movimento de Rotação da Terra", "EF05C011, EF05C111", "Explicação de dias/noites e simulador de órbita.", kitEssential],
+                    ["Funções Urbanas das Cidades", "EF05C010, EF05GE03", "Funções das cidades e construir congresso.", kitEssential],
+                    ["Constelações", "EF05C011, EF05CI10", "Identificar constelações e projetar luzes.", kitEssential],
+                    ["Propriedades Físicas dos Materiais", "EF05C004, EF05CI01", "Dureza e elasticidade e montar prensa.", kitEssential],
+                    ["Ciclo Hidrológico", "EF05C011, EF05CI02", "Ciclo hidrológico e estação de tratamento.", kitEssential],
+                    ["Nutrição do Corpo Humano", "EF05C004, EF05CI06", "Digestão e modelo de sistema digestório.", kitEssential],
+                    ["Diversidade Cultural", "EF05C010, EF05HI01", "Manifestações culturais e palco de dança.", kitEssential],
+                    ["Patrimônio Imaterial: Samba", "EF05C010, EF05HI10", "História do samba e instrumentos automatizados.", kitEssential],
+                    ["Cidadania e Direitos", "EF05C010, EF05HI05", "Direitos humanos e urna eletrônica.", kitEssential],
+                    ["Carimbó", "EF05C011, EF15AR14", "Instrumentos e roda de carimbó.", kitEssential],
+                    ["Consumo Consciente da Água", "EF05C010, EF05C104", "Uso consciente e sistema de captação.", kitEssential],
+                    ["Vinte Legos Submarinos", "EF05C004, EF05GE06", "Embarcações e simulador de lançamento.", kitEssential],
+                    ["Probabilidade", "EF05C003, EF05MA23", "Matemática e jogo de cara ou coroa.", kitEssential],
+                    ["Materiais e Suas Reações", "EF05C004, EF05C101", "Força mecânica e carro-puxador.", kitEssential],
+                    ["Patrimônio: Meu, Seu e Nosso!", "EF05C010, EF05HI10", "Patrimônios e programar um bondinho.", kitEssential],
+                    ["Squash", "EF05C003, EF35EF05", "Regras do squash e simulador de partidas.", kitEssential],
+                    ["Oficina Extra: Projeto Livre", "EF05C001", "Aplicação dos conhecimentos em projeto aberto.", kitEssential]
+                ],
+                "6º Ano": [
+                    ["Oficina Introdutória: Robótica", "EF69CO12", "Kit Spike Prime e resolução de problemas.", kitPrime],
+                    ["Oficina Introdutória: Software", "EF69CO02, EF69CO03", "Hardware e programação em blocos Prime.", kitPrime],
+                    ["Conhecendo os Motores", "EF06CO03", "Leitura de movimentos e base motriz.", kitPrime],
+                    ["Conhecendo os Sensores", "EF06CO03, EF06CO05", "Entradas/saídas e protótipo multissensor.", kitPrime],
+                    ["Explorando o Sensor de Força", "EF06CO03, EF06CO05", "Recursos de entrada e Gira-Palhaço.", kitPrime],
+                    ["Dança dos Robôs", "EF06CO02, EF15AR12", "Cultura e robô dançarino.", kitPrime],
+                    ["Atravessando Rios: Pontes", "EF06CO03, EF06GE01", "Pontes levadiças e construção civil.", kitPrime],
+                    ["Moinho de Vento", "EF06CO03, EF06CI01", "Transformação energia e moinho funcional.", kitPrime],
+                    ["Caminhão de Lixo", "EF06CO03, EF06GE11", "Tratamento lixo e caminhão compactador.", kitPrime],
+                    ["Sistema Solar: Planetas", "EF06CO01, EF06CI14", "Modelo do sistema solar motorizado.", kitPrime],
+                    ["Células: Unidade da Vida", "EF06CO03, EF06CI05", "Estrutura celular e modelo interativo.", kitPrime],
+                    ["Sistemas do Corpo: Digestório", "EF06CO03, EF06CI06", "Funcionamento dos órgãos e simulação.", kitPrime],
+                    ["Grécia Antiga", "EF06CO03, EF06HI10", "Partenon e arquitetura clássica.", kitPrime],
+                    ["Império Romano", "EF06CO03, EF06HI13", "Engenharia romana e coliseu.", kitPrime],
+                    ["Entre Pirâmides e Faraós", "EF06CO03, EF06HI19", "Cultura egípcia e templo secreto.", kitPrime],
+                    ["Linguagens no Ambiente Digital", "EF06CO02, EF67LP03", "Ruídos e robô testador de respostas.", kitPrime],
+                    ["As Paisagens", "EF06CO02, EF06GE01", "Transporte autônomo e investigação.", kitPrime],
+                    ["É Falta, Juiz!", "EF06CO02, EF67EF03", "Esporte invasão e simulador chute.", kitPrime],
+                    ["Sorte ou Azar", "EF06CO01, EF06MA30", "Simulações e robô-sorteador.", kitPrime],
+                    ["Poupando", "EF06CO04, EF06MA33", "Poupando e cofre inteligente.", kitPrime]
+                ],
+                "7º Ano": [
+                    ["Oficina Introdutória: Robótica", "EF69CO12", "Introdução ao kit Prime e resolução de problemas iniciais.", kitPrime],
+                    ["Oficina Introdutória: Software", "EF69CO02, EF69CO03", "Programação avançada em blocos para o kit Prime.", kitPrime],
+                    ["Explorando os Sensores: Drone", "EF07CO05", "Criar algoritmos usando decomposição e montar um drone.", kitPrime],
+                    ["Explorando os Motores", "EF07CO05, EF07CI05", "Criar um veículo automotivo com controle de precisão.", kitPrime],
+                    ["Terremotos", "EF07CO03, EF07CI08", "Construir um simulador de terremotos e estudar engenharia.", kitPrime],
+                    ["Máquina Simples", "EF07CO02, EF07CI01", "Construir uma catapulta motorizada com fundamentos físicos.", kitPrime],
+                    ["Ecossistemas", "EF07CO05, EF07CI07", "Montar um observatório de fauna robótico.", kitPrime],
+                    ["Aparelho Reprodutor", "EF07CO05, EF07CI08", "Representar sistemas biológicos com automação.", kitPrime],
+                    ["Renascimento", "EF07CO03, EF07HI04", "Conhecer as máquinas de Da Vinci e montar um protótipo.", kitPrime],
+                    ["Grandes Navegações", "EF07CO03, EF07HI06", "Montar uma caravela com sistema de navegação por sensores.", kitPrime],
+                    ["Cidades Sustentáveis", "EF07CO05, EF07GE06", "Planejar e montar um sistema de iluminação pública inteligente.", kitPrime],
+                    ["Fontes de Energia", "EF07CO05, EF07CI05", "Montar uma usina hidrelétrica com gerador simbólico.", kitPrime],
+                    ["Manejo de Resíduos", "EF07CO05, EF07GE11", "Montar uma esteira de separação automática por sensor de cor.", kitPrime],
+                    ["Inquisição e Conhecimento", "EF07CO03, EF07HI02", "Construir um robô-mago lançador de peças.", kitPrime],
+                    ["Vulcão", "EF07CO05, EF07CI15", "Construir um simulador de erupção com movimentos mecânicos.", kitPrime],
+                    ["Segurança nas Redes", "EF07CO06, EF67LP03", "Construir um robô hackeado para testar protocolos de segurança.", kitPrime],
+                    ["Sistemas Bancários: Cofre", "EF07CO03, EF07CI06", "Refletir sobre evolução da moeda e construir um cofre digital.", kitPrime],
+                    ["Torneio de Basquete", "EF07CO03, EF67EF03", "Construir um robô-lançador de arremessos precisos.", kitPrime],
+                    ["Caixa Registradora", "EF07CO01, EF07CI06", "Construir uma caixa registradora automatizada.", kitPrime],
+                    ["Bullying", "EF07CO09, EF09ER02", "Montar um robô mediador de conflitos para debate ético.", kitPrime]
+                ],
+                "8º Ano": [
+                    ["Oficina Introdutória: Robótica", "EF69CO12", "Aprofundamento em lógica de programação com Spike Prime.", kitPrime],
+                    ["Oficina Introdutória: Software", "EF69CO02, EF69CO03", "Uso de variáveis e operadores lógicos na programação.", kitPrime],
+                    ["O Universo da Robótica", "EF08CO04, EF08GE16", "Montar um ponto de ônibus inteligente com sensores.", kitPrime],
+                    ["Força e Movimento", "EF08CO04, EF08MA18", "Diferenciar motores e montar um animal robótico complexo.", kitPrime],
+                    ["Ângulos", "EF08CO04, EF08MA15", "Montar um robô que realiza curvas precisas baseadas em ângulos.", kitPrime],
+                    ["Tecnologia e Informação", "EF08CO02, EF08CO11", "Construir um robô para recomendar temas e analisar fake news.", kitPrime],
+                    ["Fontes de Energia e Impactos", "EF08CO05, EF08CI01", "Montar um carro solar (simulado) para discutir sustentabilidade.", kitPrime],
+                    ["O Corpo Humano: Sistemas", "EF08CO04, EF08CI07", "Simular o sistema nervoso com sensores de toque e resposta.", kitPrime],
+                    ["Revolução Industrial", "EF08CO04, EF08HI03", "Montar uma máquina a vapor (modelo mecânico) automatizada.", kitPrime],
+                    ["Estados Unidos no Século XIX", "EF08CO04, EF08HI15", "Construir um modelo de locomotiva e discutir expansão.", kitPrime],
+                    ["América Latina", "EF08CO04, EF08GE10", "Representar a diversidade e montar um monumento automatizado.", kitPrime],
+                    ["Geopolítica", "EF08CO04, EF08GE13", "Montar um sistema de monitoramento de fronteiras com sensores.", kitPrime],
+                    ["Climas e Ecossistemas", "EF08CO05, EF08GE05", "Montar uma estação meteorológica que mede luz e distância.", kitPrime],
+                    ["Boxe Robótico", "EF08CO04, EF67EF03", "Montar um robô-pugilista para entender mecânica de impacto.", kitPrime],
+                    ["Instalação Artística", "EF08CO04, EF69AR06", "Criar uma obra de arte interativa que reage à presença.", kitPrime],
+                    ["Internet", "EF08CO06, EF08GE13", "Montar um robô-manipulador para discutir automação remota.", kitPrime],
+                    ["Diáspora Nordestina", "EF08CO04, EF08GE04", "Montar um caminhão 'pau de arara' para debate histórico.", kitPrime],
+                    ["Industrialização no Brasil", "EF08CO05, EF08HI03", "Montar uma linha de produção automatizada.", kitPrime],
+                    ["Comunicação em Código", "EF08CO04, EF69AR10", "Entender Código Morse e montar um telégrafo funcional.", kitPrime],
+                    ["Esteira Seletora", "EF08CO04, EF08HI03", "Otimizar a triagem de produtos com uma esteira automática.", kitPrime],
+                    ["Tecnologia como Fator de Impacto", "EF08CO01", "Debate sobre ética, sociedade e o futuro da tecnologia.", kitPrime]
+                ],
+                "9º Ano": [
+                    ["Oficina Introdutória: Robótica", "EF69CO12", "Resolução de problemas complexos com Spike Prime.", kitPrime],
+                    ["Oficina Introdutória: Software", "EF69CO02, EF69CO03", "Programação em blocos e introdução a lógica textual.", kitPrime],
+                    ["Farol", "EF09CO02", "Montar um sistema de iluminação de navegação com sensores.", kitPrime],
+                    ["Robô Doméstico", "EF09CO07, EF09GE11", "Criar um robô aspirador ou assistente com sensor de distância.", kitPrime],
+                    ["GPS", "EF09CO02", "Estudar satélites e orientação e montar um protótipo guia.", kitPrime],
+                    ["Drone-delivery", "EF09CO07, EF09GE05", "Discutir globalização e montar um drone carregador.", kitPrime],
+                    ["Universo", "EF09CO02, EF09CI16", "Montar uma nave espacial com sistemas de sobrevivência.", kitPrime],
+                    ["Impactos do Acesso à Internet", "EF09CO08, EF09GE11", "Montar uma antena de transmissão com sensor de força.", kitPrime],
+                    ["The Wall", "EF09CO01, EF09GE02", "Discutir muros geopolíticos e montar uma barreira móvel.", kitPrime],
+                    ["Conflitos Geopolíticos", "EF09CO01, EF09GE10", "Montar um veículo de reconhecimento de terreno.", kitPrime],
+                    ["Energia Nuclear", "EF09CO10, EF09CI03", "Montar um sistema de segurança de usina nuclear.", kitPrime],
+                    ["Unidades de Conservação", "EF09CO06, EF09CI12", "Montar um sistema de monitoramento de parques nacionais.", kitPrime],
+                    ["Ataques Cibernéticos", "EF09CO04, EF09ER02", "Criptografia e segurança digital em um dispositivo LEGO®.", kitPrime],
+                    ["Raio X", "EF09CO02, EF09CI07", "Montar um tomógrafo ou aparelho de raio x simbólico.", kitPrime],
+                    ["Modernização da Agropecuária", "EF09CO01, EF09GE12", "Montar uma porteira automática e autômatos de campo.", kitPrime],
+                    ["Energias Renováveis", "EF09CO09, EF09GE18", "Montar um caminhão adaptado para novas fontes de energia.", kitPrime],
+                    ["Nanotecnologia", "EF09CO02, EF09CI09", "Representar o DNA e montar um nanorrobô cirúrgico.", kitPrime],
+                    ["Penso, Logo Identifico", "EF09CO01, EF69AR01", "Uso de IA e sensores para identificação de objetos.", kitPrime],
+                    ["A Cidade do Amanhã", "EF09CO11, EF09GE18", "Montar um modelo de Smart City totalmente integrado.", kitPrime],
+                    ["Máquinas em Fábricas", "EF09CO07, EF09GE11", "Revolução Industrial, Braço robótico, Automação", kitPrime],
+                    ["Desafio de Inovação", "EF09CO12", "Projeto final livre aplicando todos os conceitos aprendidos.", kitPrime]
+                ]
+            };
 
-            years.forEach((ano, indexAno) => {
-                for (let i = 1; i <= 20; i++) {
-                    const id = (indexAno + 1) * 100 + i;
-                    const tema = temasBase[(i - 1) % temasBase.length];
-                    db.push({
-                        id: id,
-                        oficina: i,
+            const data = [];
+            Object.entries(raw).forEach(([ano, oficinas]) => {
+                oficinas.forEach((of, index) => {
+                    data.push({
+                        id: `${ano}-${index + 1}`,
+                        oficina: index + 1,
                         ano: ano,
-                        tema: tema,
-                        bncc: bnccCodes[indexAno] || "EF09CO01",
-                        objetivo: `Desenvolver competências de robótica e pensamento computacional através da montagem e lógica aplicada ao tema ${tema}.`,
-                        metodologia: `1. Contextualização: Debate sobre a aplicação real do tema.\n2. Montagem: Uso do Kit LEGO® para prototipagem.\n3. Programação: Criação do código para execução da tarefa.\n4. Avaliação: Teste de performance e ajustes.`,
-                        materiais: "Kit Robótica Educacional, Tablet/Laptop, Peças de Reposição."
+                        tema: of[0],
+                        bncc: of[1],
+                        objetivo: of[2],
+                        metodologia: `1. Problematização: Contextualizar o tema "${of[0]}" com os alunos.\n2. Planejamento: Desenhar ou discutir o modelo a ser construído.\n3. Construção: Utilizar o ${of[3]} para montar o protótipo.\n4. Programação/Lógica: Aplicar as habilidades ${of[1]} no software.\n5. Testes e Avaliação: Verificar se o modelo cumpre os objetivos: ${of[2]}`,
+                        materiais: of[3]
                     });
-                }
+                });
             });
-            return db;
+
+            return data;
         };
 
-        const rawData = generateFullDatabase();
+        const rawData = getDatabaseFromSheets();
 
         const ModalPlanejamento = ({ item, onClose }) => {
             const [formData, setFormData] = useState({
-                professor: '',
-                turma: '',
-                data: new Date().toLocaleDateString('pt-BR'),
-                observacoes: ''
+                professor: '', turma: '', data: new Date().toLocaleDateString('pt-BR'), observacoes: ''
             });
 
             return (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md no-print modal-container">
-                    <div className="bg-white w-full max-w-4xl max-h-[90vh] rounded-[2rem] shadow-2xl overflow-hidden flex flex-col print:max-h-none print:shadow-none print:rounded-none">
-                        
-                        {/* Header Modal - Oculto na Impressão */}
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md no-print">
+                    <div className="bg-white w-full max-w-4xl max-h-[90vh] rounded-[2rem] shadow-2xl overflow-hidden flex flex-col modal-content-to-print">
                         <div className="px-8 py-5 border-b flex justify-between items-center bg-slate-50 no-print">
                             <h2 className="font-bold text-slate-800 flex items-center gap-2">
-                                <Icon name="file-text" className="text-blue-600" /> Novo Planejamento
+                                <Icon name="file-text" className="text-blue-600" /> Planejamento de Aula
                             </h2>
                             <button onClick={onClose} className="p-2 hover:bg-slate-200 rounded-full transition-colors">
                                 <Icon name="x" className="text-slate-400" />
                             </button>
                         </div>
 
-                        {/* Área de Conteúdo - Esta é a custom-print-area */}
-                        <div className="flex-grow overflow-y-auto p-8 custom-print-area print:overflow-visible">
+                        <div className="flex-grow overflow-y-auto p-8 print:overflow-visible">
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
                                 <div className="md:col-span-2 space-y-6">
-                                    <div className="bg-slate-900 text-white p-8 rounded-3xl relative overflow-hidden print-border">
+                                    <div className="bg-slate-900 text-white p-8 rounded-3xl print-border relative overflow-hidden">
                                         <span className="text-[10px] font-black uppercase text-blue-400">{item.ano} • Oficina #{item.oficina}</span>
-                                        <h1 className="text-3xl font-black mt-1 mb-4 uppercase leading-none">{item.tema}</h1>
+                                        <h1 className="text-3xl font-black mt-1 mb-4 uppercase leading-tight">{item.tema}</h1>
                                         <div className="flex items-center gap-2 text-[10px] font-bold bg-white/10 w-fit px-3 py-1.5 rounded-full uppercase">
                                             <Icon name="target" size={14} /> {item.bncc}
                                         </div>
                                     </div>
                                     
                                     <div className="grid grid-cols-2 gap-4 no-print">
-                                        <input 
-                                            className="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl outline-none" 
-                                            placeholder="Nome do docente"
-                                            value={formData.professor}
-                                            onChange={e => setFormData({...formData, professor: e.target.value})}
-                                        />
-                                        <input 
-                                            className="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl outline-none" 
-                                            placeholder="Turma / Período"
-                                            value={formData.turma}
-                                            onChange={e => setFormData({...formData, turma: e.target.value})}
-                                        />
+                                        <input className="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl outline-none" placeholder="Professor" value={formData.professor} onChange={e => setFormData({...formData, professor: e.target.value})} />
+                                        <input className="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl outline-none" placeholder="Turma" value={formData.turma} onChange={e => setFormData({...formData, turma: e.target.value})} />
                                     </div>
 
-                                    <div className="hidden print:block space-y-2 text-slate-800 border-b pb-4">
+                                    {/* Exibição apenas na impressão */}
+                                    <div className="hidden print-value space-y-2 border-b pb-4">
                                         <p className="text-sm"><strong>Professor:</strong> {formData.professor || '____________________'}</p>
                                         <p className="text-sm"><strong>Turma:</strong> {formData.turma || '____________________'}</p>
                                         <p className="text-sm"><strong>Data:</strong> {formData.data}</p>
                                     </div>
                                 </div>
                                 <div className="bg-blue-50/50 p-6 rounded-3xl border border-blue-100 space-y-4 print-border">
-                                    <h4 className="font-bold text-blue-900 text-xs uppercase flex items-center gap-2">
-                                        <Icon name="clock" className="text-blue-500" /> Base Pedagógica
-                                    </h4>
+                                    <h4 className="font-bold text-blue-900 text-xs uppercase flex items-center gap-2"><Icon name="clock" className="text-blue-500" /> Objetivos</h4>
                                     <p className="text-[11px] text-blue-900/70 leading-relaxed italic">{item.objetivo}</p>
                                 </div>
                             </div>
@@ -174,44 +355,30 @@
                                     <span className="font-black text-[9px] uppercase block mb-2 text-slate-400">Materiais</span>
                                     {item.materiais}
                                 </div>
-                                
-                                <textarea 
-                                    className="w-full bg-slate-50 border border-slate-200 p-5 rounded-2xl min-h-[100px] no-print"
-                                    placeholder="Observações adicionais..."
-                                    value={formData.observacoes}
-                                    onChange={e => setFormData({...formData, observacoes: e.target.value})}
-                                />
-
+                                <div className="no-print">
+                                    <span className="font-black text-[9px] uppercase block mb-2 text-slate-400">Observações Extras</span>
+                                    <textarea className="w-full bg-slate-50 border border-slate-200 p-4 rounded-xl outline-none min-h-[100px]" value={formData.observacoes} onChange={e => setFormData({...formData, observacoes: e.target.value})} />
+                                </div>
                                 {formData.observacoes && (
-                                    <div className="hidden print:block bg-white border border-slate-200 p-6 rounded-xl text-slate-600 text-sm whitespace-pre-wrap">
-                                        <span className="font-black text-[9px] uppercase block mb-2 text-slate-400">Observações do Docente</span>
+                                    <div className="hidden print-value bg-white border p-6 rounded-xl text-slate-600 text-sm print-border">
+                                        <span className="font-black text-[9px] uppercase block mb-2 text-slate-400">Anotações</span>
                                         {formData.observacoes}
                                     </div>
                                 )}
                             </div>
 
-                            {/* Mensagem de Rodapé para Impressão */}
-                            <div className="hidden print:block mt-12 pt-6 border-t border-slate-200 text-center">
-                                <p className="text-xs font-bold text-slate-500 italic">
+                            <div className="hidden print-value mt-12 pt-8 border-t border-slate-100 text-center">
+                                <p className="text-xs font-bold text-slate-400 italic">
                                     Não se esqueça de realizar o agendamento dos kits de robótica e demais equipamentos!
+                                    
 Consulte o Livro do Professor para obter informações detalhadas sobre esta oficina. Nele, você encontrará o manual de montagem, que é essencial para o seu planejamento.
-                                </p>
+
                             </div>
                         </div>
 
-                        {/* Footer Modal - Oculto na Impressão */}
                         <div className="p-6 bg-slate-50 border-t flex gap-4 no-print">
-                            <button 
-                                onClick={() => {
-                                    const text = `PLANO: ${item.tema}\nANO: ${item.ano}\nPROFESSOR: ${formData.professor}\nTURMA: ${formData.turma}\nMETODOLOGIA: ${item.metodologia}`;
-                                    navigator.clipboard.writeText(text).then(() => alert("Copiado!"));
-                                }} 
-                                className="flex-1 bg-white border p-4 rounded-2xl font-black text-[10px] uppercase flex items-center justify-center gap-2"
-                            >
-                                <Icon name="copy" /> Copiar Texto
-                            </button>
-                            <button onClick={() => window.print()} className="flex-1 bg-blue-600 text-white p-4 rounded-2xl font-black text-[10px] uppercase flex items-center justify-center gap-2">
-                                <Icon name="download" /> Imprimir / PDF
+                            <button onClick={() => window.print()} className="flex-1 bg-blue-600 text-white p-4 rounded-2xl font-black text-[10px] uppercase flex items-center justify-center gap-2 hover:bg-blue-700 transition-colors">
+                                <Icon name="printer" /> Imprimir/Exportar PDF
                             </button>
                         </div>
                     </div>
@@ -238,9 +405,7 @@ Consulte o Livro do Professor para obter informações detalhadas sobre esta ofi
                 <div className="min-h-screen flex flex-col">
                     <nav className="border-b bg-white sticky top-0 z-10 no-print">
                         <div className="max-w-5xl mx-auto px-6 h-20 flex items-center gap-3">
-                            <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white">
-                                <Icon name="graduation-cap" size={24} />
-                            </div>
+                            <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white"><Icon name="graduation-cap" size={24} /></div>
                             <h1 className="font-black text-slate-900 text-lg uppercase">Oficinas de Robótica</h1>
                         </div>
                     </nav>
@@ -254,15 +419,13 @@ Consulte o Livro do Professor para obter informações detalhadas sobre esta ofi
                                 </div>
                             )}
                             <div className="max-w-2xl mx-auto space-y-6">
-                                <input 
-                                    className="w-full px-8 py-6 bg-white border border-slate-100 rounded-[2rem] shadow-xl outline-none text-xl font-bold"
-                                    placeholder="Pesquisar oficina..."
-                                    value={search}
-                                    onChange={e => setSearch(e.target.value)}
-                                />
-                                <div className="flex gap-2 overflow-x-auto pb-4 no-scrollbar">
+                                <div className="relative group">
+                                    <Icon name="search" className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-blue-500 transition-colors" />
+                                    <input className="w-full px-16 py-6 bg-white border border-slate-100 rounded-[2.5rem] shadow-xl outline-none text-xl font-bold placeholder:text-slate-300" placeholder="Pesquisar oficina..." value={search} onChange={e => setSearch(e.target.value)} />
+                                </div>
+                                <div className="flex gap-2 overflow-x-auto pb-4 no-scrollbar scroll-smooth">
                                     {years.map(y => (
-                                        <button key={y} onClick={() => setFilterYear(y)} className={`px-5 py-2 rounded-full text-[10px] font-black uppercase whitespace-nowrap border-2 ${filterYear === y ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-400 border-slate-100'}`}>
+                                        <button key={y} onClick={() => setFilterYear(y)} className={`px-6 py-2.5 rounded-full text-[10px] font-black uppercase whitespace-nowrap border-2 transition-all ${filterYear === y ? 'bg-slate-900 text-white border-slate-900 shadow-lg' : 'bg-white text-slate-400 border-slate-100 hover:border-slate-300'}`}>
                                             {y}
                                         </button>
                                     ))}
@@ -272,31 +435,39 @@ Consulte o Livro do Professor para obter informações detalhadas sobre esta ofi
 
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             {results.map(item => (
-                                <div key={item.id} onClick={() => setSelected(item)} className="bg-white border rounded-[2rem] p-8 hover:border-blue-500 cursor-pointer transition-all flex flex-col justify-between group no-print">
+                                <div key={item.id} onClick={() => setSelected(item)} className="bg-white border-2 border-slate-50 rounded-[2rem] p-8 hover:border-blue-500 cursor-pointer transition-all flex flex-col justify-between group no-print shadow-sm hover:shadow-xl hover:-translate-y-1">
                                     <div>
-                                        <div className="flex justify-between mb-4">
-                                            <span className="text-[9px] font-black bg-blue-50 text-blue-600 px-3 py-1 rounded-full">{item.ano}</span>
-                                            <span className="text-[9px] font-bold text-slate-200 uppercase">#{item.oficina}</span>
+                                        <div className="flex justify-between items-start mb-6">
+                                            <span className="text-[9px] font-black bg-blue-50 text-blue-600 px-3 py-1.5 rounded-full uppercase">{item.ano}</span>
+                                            <span className="text-[10px] font-black text-slate-200">#{item.oficina}</span>
                                         </div>
-                                        <h3 className="text-xl font-black text-slate-800 uppercase group-hover:text-blue-600">{item.tema}</h3>
-                                        <p className="text-slate-400 text-xs mt-2 italic line-clamp-2">{item.objetivo}</p>
+                                        <h3 className="text-xl font-black text-slate-800 uppercase group-hover:text-blue-600 leading-tight mb-3 transition-colors">{item.tema}</h3>
+                                        <p className="text-slate-400 text-[11px] leading-relaxed line-clamp-3">{item.objetivo}</p>
                                     </div>
-                                    <div className="mt-6 pt-4 border-t flex justify-between items-center">
-                                        <span className="text-[9px] font-black text-slate-300 uppercase">{item.bncc}</span>
-                                        <Icon name="file-text" size={14} className="text-slate-200 group-hover:text-blue-600" />
+                                    <div className="mt-8 pt-4 border-t border-slate-50 flex justify-between items-center text-[9px] font-black text-slate-400 uppercase">
+                                        <div className="flex items-center gap-1.5"><Icon name="tag" size={12} className="text-blue-500"/> {item.bncc.split(',')[0]}</div>
+                                        <div className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-all">
+                                            <Icon name="arrow-right" size={14} />
+                                        </div>
                                     </div>
                                 </div>
                             ))}
                         </div>
-                    </main>
 
+                        {results.length === 0 && search && (
+                            <div className="text-center py-20">
+                                <Icon name="search-x" size={48} className="mx-auto text-slate-200 mb-4" />
+                                <p className="text-slate-400 font-bold">Nenhuma oficina encontrada para os filtros aplicados.</p>
+                            </div>
+                        )}
+                    </main>
                     {selected && <ModalPlanejamento item={selected} onClose={() => setSelected(null)} />}
                 </div>
             );
         };
 
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
+            const root = ReactDOM.createRoot(document.getElementById('root'));
+            root.render(<App />);
     </script>
 </body>
 </html>
