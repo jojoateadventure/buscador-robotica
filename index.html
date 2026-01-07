@@ -17,7 +17,6 @@
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         
         @media print {
-            /* Garante que o conteúdo flua por várias páginas se necessário */
             html, body {
                 height: auto !important;
                 overflow: visible !important;
@@ -26,7 +25,6 @@
             body * { visibility: hidden; }
             .no-print { display: none !important; }
             
-            /* Torna visível o conteúdo do modal e seus filhos */
             .modal-content-to-print, .modal-content-to-print * { visibility: visible; }
             
             .modal-content-to-print {
@@ -39,7 +37,7 @@
                 margin: 0 !important;
                 background: white !important;
                 box-shadow: none !important;
-                max-height: none !important; /* Remove limite de altura para imprimir tudo */
+                max-height: none !important;
                 overflow: visible !important;
             }
             
@@ -47,7 +45,7 @@
                 border: 1px solid #e2e8f0 !important; 
                 border-radius: 8px !important;
                 margin-bottom: 12px !important;
-                page-break-inside: avoid; /* Evita quebrar caixas no meio da página */
+                page-break-inside: avoid;
             }
             .bg-slate-900 { 
                 background: #000 !important; 
@@ -69,7 +67,7 @@
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useMemo, useEffect } = React;
+        const { useState, useMemo, useEffect, useRef } = React;
 
         const Icon = ({ name, size = 20, className = "" }) => {
             useEffect(() => {
@@ -78,7 +76,7 @@
             return <i data-lucide={name} className={className} style={{ width: size, height: size }}></i>;
         };
 
-        // BANCO DE DADOS CORRIGIDO CONFORME PLANILHAS OFICIAIS
+        // DADOS (Mantidos conforme original)
         const getDatabaseFromSheets = () => {
             const kitEssential = "Kit LEGO® Education SPIKE Essential";
             const kitPrime = "Kit LEGO® Education SPIKE Prime";
@@ -315,7 +313,6 @@
                 professor: '', turma: '', data: new Date().toLocaleDateString('pt-BR'), observacoes: ''
             });
 
-            // CORREÇÃO: Removida a classe "no-print" da div externa abaixo
             return (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md">
                     <div className="bg-white w-full max-w-4xl max-h-[90vh] rounded-[2rem] shadow-2xl overflow-hidden flex flex-col modal-content-to-print">
@@ -378,10 +375,13 @@
                                 )}
                             </div>
 
-                            <div className="hidden print-value mt-12 pt-8 border-t border-slate-100 text-center">
-                                <p className="text-xs font-bold text-slate-400 italic">
+                            {/* RODAPÉ DO MODAL ATUALIZADO (Aparece apenas na impressão) */}
+                            <div className="hidden print-value mt-12 pt-8 border-t border-slate-100 text-center text-sm">
+                                <p className="font-bold text-slate-900 mb-2">
                                     Não se esqueça de realizar o agendamento dos kits de robótica e demais equipamentos.
-Consulte o Livro do Professor para obter informações detalhadas sobre esta oficina. Nele, você encontrará o manual de montagem, que é essencial para o seu planejamento.
+                                </p>
+                                <p className="font-bold text-slate-600">
+                                    Consulte o Livro do Professor para obter informações detalhadas sobre esta oficina. Nele, você encontrará o manual de montagem, que é essencial para o seu planejamento.
                                 </p>
                             </div>
                         </div>
@@ -400,6 +400,7 @@ Consulte o Livro do Professor para obter informações detalhadas sobre esta ofi
             const [search, setSearch] = useState('');
             const [filterYear, setFilterYear] = useState('Todos');
             const [selected, setSelected] = useState(null);
+            const scrollRef = useRef(null);
             const years = ['Todos', '1º Ano', '2º Ano', '3º Ano', '4º Ano', '5º Ano', '6º Ano', '7º Ano', '8º Ano', '9º Ano'];
 
             const results = useMemo(() => {
@@ -410,6 +411,15 @@ Consulte o Livro do Professor para obter informações detalhadas sobre esta ofi
                     return matchesText && matchesYear;
                 });
             }, [search, filterYear]);
+
+            // Função para rolar o menu de anos
+            const scroll = (direction) => {
+                if (scrollRef.current) {
+                    const { current } = scrollRef;
+                    const scrollAmount = direction === 'left' ? -200 : 200;
+                    current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+                }
+            };
 
             return (
                 <div className="min-h-screen flex flex-col">
@@ -433,12 +443,30 @@ Consulte o Livro do Professor para obter informações detalhadas sobre esta ofi
                                     <Icon name="search" className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-blue-500 transition-colors" />
                                     <input className="w-full px-16 py-6 bg-white border border-slate-100 rounded-[2.5rem] shadow-xl outline-none text-xl font-bold placeholder:text-slate-300" placeholder="Pesquisar oficina..." value={search} onChange={e => setSearch(e.target.value)} />
                                 </div>
-                                <div className="flex gap-2 overflow-x-auto pb-4 no-scrollbar scroll-smooth">
-                                    {years.map(y => (
-                                        <button key={y} onClick={() => setFilterYear(y)} className={`px-6 py-2.5 rounded-full text-[10px] font-black uppercase whitespace-nowrap border-2 transition-all ${filterYear === y ? 'bg-slate-900 text-white border-slate-900 shadow-lg' : 'bg-white text-slate-400 border-slate-100 hover:border-slate-300'}`}>
-                                            {y}
-                                        </button>
-                                    ))}
+                                
+                                {/* MENU DE ANOS COM SETAS DE NAVEGAÇÃO */}
+                                <div className="relative flex items-center">
+                                    <button 
+                                        onClick={() => scroll('left')} 
+                                        className="absolute left-0 z-10 p-2 bg-white rounded-full shadow-lg border border-slate-100 text-slate-400 hover:text-blue-600 hover:scale-110 transition-all -ml-4"
+                                    >
+                                        <Icon name="chevron-left" />
+                                    </button>
+                                    
+                                    <div ref={scrollRef} className="flex gap-2 overflow-x-auto pb-4 pt-2 px-2 no-scrollbar scroll-smooth w-full">
+                                        {years.map(y => (
+                                            <button key={y} onClick={() => setFilterYear(y)} className={`px-6 py-2.5 rounded-full text-[10px] font-black uppercase whitespace-nowrap border-2 transition-all flex-shrink-0 ${filterYear === y ? 'bg-slate-900 text-white border-slate-900 shadow-lg' : 'bg-white text-slate-400 border-slate-100 hover:border-slate-300'}`}>
+                                                {y}
+                                            </button>
+                                        ))}
+                                    </div>
+
+                                    <button 
+                                        onClick={() => scroll('right')} 
+                                        className="absolute right-0 z-10 p-2 bg-white rounded-full shadow-lg border border-slate-100 text-slate-400 hover:text-blue-600 hover:scale-110 transition-all -mr-4"
+                                    >
+                                        <Icon name="chevron-right" />
+                                    </button>
                                 </div>
                             </div>
                         </section>
