@@ -8,180 +8,164 @@
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Caveat:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@700;800&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #F8FAFC; }
-        .no-scrollbar::-webkit-scrollbar { display: none; }
+        body { font-family: 'Inter', sans-serif; background-color: #FDFDFD; color: #1e293b; overflow-x: hidden; }
+        h1, h2, .font-title { font-family: 'Plus Jakarta Sans', sans-serif; }
         
-        /* Efeito de Bloco de Notas */
-        .notepad {
+        .notepad-paper {
             background: #fff;
-            background-image: radial-gradient(#e5e7eb 1px, transparent 1px);
-            background-size: 24px 24px;
-            position: relative;
+            background-image: linear-gradient(#f1f5f9 1px, transparent 1px);
+            background-size: 100% 2.5rem;
+            line-height: 2.5rem;
         }
+
+        .custom-scroll::-webkit-scrollbar { width: 5px; }
+        .custom-scroll::-webkit-scrollbar-track { background: transparent; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
 
         @media print {
             .no-print { display: none !important; }
-            body { background: white !important; margin: 0; padding: 0; }
-            .print-area { 
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100% !important;
-                height: 100% !important;
+            body { background: white !important; }
+            .print-container { 
+                position: static; 
+                width: 100% !important; 
                 box-shadow: none !important;
                 border: none !important;
-                z-index: 9999;
-                padding: 40px !important;
+                padding: 0 !important;
             }
-            .notepad { background-image: none !important; border: 1px solid #eee !important; }
-            /* Garante que o texto digitado apareça */
-            input, textarea { border: none !important; outline: none !important; }
+            .notepad-paper { background-image: none !important; }
         }
 
-        .fade-in { animation: fadeIn 0.4s ease-out forwards; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+        .fade-in { animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .search-container { transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
+        .search-active { margin-top: 0 !important; }
     </style>
 </head>
-<body class="text-slate-900">
+<body>
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useMemo, useEffect } = React;
+        const { useState, useMemo } = React;
 
-        // --- ÍCONES ---
-        const IconSearch = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>;
-        const IconCopy = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>;
-        const IconPlan = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>;
-        const IconRobot = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>;
-
-        // --- BANCO DE DADOS (SIMPLIFICADO PARA O EXEMPLO MAS EXPANSÍVEL) ---
+        // BANCO DE DADOS COMPLETO CONSOLIDADO DOS ARQUIVOS
         const rawData = [
+            // 1º ANO
             { id: "1-1", oficina: 1, ano: "1º Ano", tema: "Conhecendo o Kit", bncc: "EF15C008", objetivo: "Discutir robótica e tecnologias, manusear o kit LEGO® e criar uma solução para a travessia de um rio." },
-            { id: "2-1", oficina: 1, ano: "2º Ano", tema: "Oficina Introdutória: Contextualizando", bncc: "EF15C006", objetivo: "Discutir robótica e tecnologias, manusear o kit LEGO® Education SPIKE Essential." },
-            { id: "3-1", oficina: 1, ano: "3º Ano", tema: "Oficina Introdutória: Contextualizando", bncc: "EF15C006", objetivo: "Discutir tecnologias e recursos digitais na educação e no mundo." },
-            { id: "4-1", oficina: 1, ano: "4º Ano", tema: "Oficina Introdutória", bncc: "EF15C006", objetivo: "Contextualização da robótica e manuseio do kit SPIKE Essential." },
-            { id: "5-3", oficina: 3, ano: "5º Ano", tema: "Conhecendo o Coração", bncc: "EF05C004", objetivo: "Conhecer o sistema cardiovascular e construir um modelo de coração com LEGO®." },
-            { id: "6-6", oficina: 6, ano: "6º Ano", tema: "Dança dos Robôs", bncc: "EF06CO02", objetivo: "Relacionar a cultura digital com a expressão corporal e automação." },
-            { id: "9-13", oficina: 13, ano: "9º Ano", tema: "Ataques Cibernéticos", bncc: "EF09CO04", objetivo: "Entender malwares, criptografia e segurança digital." }
-            // ... Adicione os outros dados aqui conforme necessário
+            { id: "1-2", oficina: 2, ano: "1º Ano", tema: "Elementos Funcionais", bncc: "EF15C008", objetivo: "Manusear o kit, identificar elementos funcionais e construir um carro movido a vento." },
+            { id: "1-3", oficina: 3, ano: "1º Ano", tema: "Classificando e Seriando", bncc: "EF01MA09, EF01MA15", objetivo: "Compreender a importância de classificar e seriar peças para montar casas geminadas." },
+            { id: "1-4", oficina: 4, ano: "1º Ano", tema: "Meios de Transporte Terrestre", bncc: "EF01C001, EF01C006", objetivo: "Identificar meios de transporte e montar um lançador de carros." },
+            { id: "1-5", oficina: 5, ano: "1º Ano", tema: "Rampa: O que rola e o que não rola", bncc: "EF01MA09, EF01MA13", objetivo: "Identificar a importância de rampas e testar objetos que rolam." },
+            { id: "1-20", oficina: 20, ano: "1º Ano", tema: "Criptografia", bncc: "EF01C004", objetivo: "Entender a criptografia para segurança de dados." },
+
+            // 2º ANO
+            { id: "2-4", oficina: 4, ano: "2º Ano", tema: "Conexões, Eixos e Encaixes", bncc: "EF02C001", objetivo: "Identificar tipos de conexões no kit e criar estrutura de sustentação." },
+            { id: "2-15", oficina: 15, ano: "2º Ano", tema: "Máquinas e Funcionalidades", bncc: "EF02C001, EF02C002", objetivo: "Compreender tecnologias de máquinas e criar um braço robótico." },
+            { id: "2-16", oficina: 16, ano: "2º Ano", tema: "Empilhadeira", bncc: "EF02C001, EF02GE07", objetivo: "Entender importância das máquinas no extrativismo." },
+            { id: "2-20", oficina: 20, ano: "2º Ano", tema: "Relógio Analógico: Engrenagens", bncc: "EF02C001, EF02HI07", objetivo: "Entender funcionamento de engrenagens e criar relógio." },
+
+            // 3º ANO
+            { id: "3-5", oficina: 5, ano: "3º Ano", tema: "Luz e Sombra", bncc: "EF03C002, EF03C102", objetivo: "Diferenciar luz natural e artificial e montar um farol." },
+            { id: "3-15", oficina: 15, ano: "3º Ano", tema: "Iluminação Automática", bncc: "EF03C002, EF03HI08", objetivo: "Conhecer história da eletricidade e montar sistema automático." },
+            { id: "3-19", oficina: 19, ano: "3º Ano", tema: "Minas Gerais Inclusiva", bncc: "EF03C004, EF15AR25", objetivo: "Acessibilidade em cidades históricas e rampa de acesso." },
+
+            // 4º ANO
+            { id: "4-3", oficina: 3, ano: "4º Ano", tema: "Órgãos Públicos", bncc: "EF04C006, EF04GE03", objetivo: "Analisar função dos órgãos públicos e construir uma ágora." },
+            { id: "4-18", oficina: 18, ano: "4º Ano", tema: "Pique-Bandeira Digital", bncc: "EF04C001, EF35EF05", objetivo: "Construir um placar digital para a prática do jogo." },
+            { id: "4-19", oficina: 19, ano: "4º Ano", tema: "Codificação da Informação", bncc: "EF04C004, EF04MA11", objetivo: "Entender bases numéricas e codificar cores." },
+
+            // 5º ANO
+            { id: "5-3", oficina: 3, ano: "5º Ano", tema: "Conhecendo o Coração", bncc: "EF05C004, EF05C107", objetivo: "Conhecer o sistema cardiovascular e construir modelo de coração." },
+            { id: "5-15", oficina: 15, ano: "5º Ano", tema: "Consumo Consciente da Água", bncc: "EF05C010, EF05C105", objetivo: "Montar sistema de captação de água da chuva." },
+            { id: "5-19", oficina: 19, ano: "5º Ano", tema: "Patrimônio: Bondinho", bncc: "EF05C010, EF05HI10", objetivo: "Analisar patrimônios e construir um bondinho." },
+
+            // 6º ANO
+            { id: "6-1", oficina: 1, ano: "6º Ano", tema: "Contextualizando a Robótica", bncc: "EF69CO12", objetivo: "Discutir robótica e criar solução para travessia de rio." },
+            { id: "6-6", oficina: 6, ano: "6º Ano", tema: "Dança dos Robôs", bncc: "EF06CO02, EF15AR12", objetivo: "Relacionar cultura digital com expressão corporal." },
+            { id: "6-18", oficina: 18, ano: "6º Ano", tema: "Simulador de Chute", bncc: "EF06CO02, EF67EF03", objetivo: "Montar simulador de futebol e biomecânica." },
+
+            // 7º ANO
+            { id: "7-5", oficina: 5, ano: "7º Ano", tema: "Terremotos", bncc: "EF07CO03, EF07CI08", objetivo: "Engenharia antissísmica e simulador de terremotos." },
+            { id: "7-17", oficina: 17, ano: "7º Ano", tema: "Sistemas Bancários: Cofre", bncc: "EF07CO03, EF07CI06", objetivo: "Segurança de dados e construção de cofre." },
+            { id: "7-19", oficina: 19, ano: "7º Ano", tema: "Caixa Registradora", bncc: "EF07CO01, EF07CI06", objetivo: "Evolução do dinheiro e automação comercial." },
+
+            // 8º ANO
+            { id: "8-3", oficina: 3, ano: "8º Ano", tema: "Ponto de Ônibus Inteligente", bncc: "EF08CO04, EF08GE16", objetivo: "Importância da programação e mobilidade urbana." },
+            { id: "8-20", oficina: 20, ano: "8º Ano", tema: "Esteira Seletora", bncc: "EF08CO04, EF08HI03", objetivo: "Otimizar triagem de produtos e automação industrial." },
+            { id: "8-18", oficina: 18, ano: "8º Ano", tema: "Industrialização no Brasil", bncc: "EF08CO05, EF08HI03", objetivo: "Analisar relações de trabalho e linha de produção." },
+
+            // 9º ANO
+            { id: "9-4", oficina: 4, ano: "9º Ano", tema: "Robô Doméstico", bncc: "EF09CO07, EF09GE11", objetivo: "Industrialização, automação e sensor de distância." },
+            { id: "9-6", oficina: 6, ano: "9º Ano", tema: "Drone-delivery", bncc: "EF09CO07, EF09GE05", objetivo: "Globalização e logística autônoma." },
+            { id: "9-15", oficina: 15, ano: "9º Ano", tema: "Modernização da Agropecuária", bncc: "EF09CO01, EF09GE12", objetivo: "Autômatos e porteira automática." },
+            { id: "9-16", oficina: 16, ano: "9º Ano", tema: "Energias Renováveis", bncc: "EF09CO09, EF09GE18", objetivo: "Caminhão adaptado e fontes de energia." }
         ];
 
-        function Modal({ isOpen, onClose, selectedOficina }) {
-            const [formData, setFormData] = useState({
-                professor: '', turma: '', tempo: '', kits: '', observacoes: ''
-            });
-
+        function Modal({ isOpen, onClose, oficina }) {
+            const [form, setForm] = useState({ professor: '', turma: '', tempo: '', kits: '', obs: '' });
             if (!isOpen) return null;
 
-            const handleExport = () => {
-                // Pequeno delay para garantir que o estado do React reflita no DOM antes da impressão
-                setTimeout(() => window.print(), 100);
-            };
-
             return (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 no-print">
-                    <div className="bg-white w-full max-w-2xl rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col max-h-[90vh] print-area">
-                        {/* Header Modal */}
-                        <div className="bg-slate-900 p-6 text-white flex justify-between items-center no-print">
-                            <h3 className="text-sm font-bold tracking-widest uppercase flex items-center gap-2">
-                                <IconPlan /> Planejador de Aula
-                            </h3>
-                            <button onClick={onClose} className="hover:rotate-90 transition-transform">
-                                <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-md p-4 no-print">
+                    <div className="bg-white w-full max-w-2xl rounded-[2.5rem] shadow-2xl flex flex-col max-h-[92vh] overflow-hidden print-container">
+                        <div className="p-8 border-b border-slate-50 flex justify-between items-center no-print">
+                            <h2 className="text-xs font-black text-slate-400 uppercase tracking-widest">Documento de Planejamento</h2>
+                            <button onClick={onClose} className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-50 text-slate-400 hover:bg-slate-100 transition-colors">
+                                <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
                             </button>
                         </div>
 
-                        {/* Área do Bloco de Notas */}
-                        <div className="p-8 md:p-14 overflow-y-auto flex-grow notepad">
-                            <div className="text-center mb-10 border-b-2 border-slate-100 pb-8">
-                                <div className="text-[10px] font-black text-blue-600 uppercase tracking-[0.3em] mb-2">Plano de Aula Robótica</div>
-                                <h1 className="text-3xl font-black text-slate-800 uppercase tracking-tight leading-tight">{selectedOficina.tema}</h1>
-                                <div className="flex justify-center gap-4 mt-4">
-                                    <span className="text-xs font-bold px-3 py-1 bg-slate-100 rounded-full text-slate-500 uppercase">{selectedOficina.ano}</span>
-                                    <span className="text-xs font-bold px-3 py-1 bg-slate-100 rounded-full text-slate-500 uppercase">Oficina #{selectedOficina.oficina}</span>
-                                </div>
+                        <div className="flex-grow overflow-y-auto p-10 custom-scroll notepad-paper">
+                            <div className="mb-10 text-center">
+                                <span className="text-[10px] font-black text-blue-600 bg-blue-50 px-4 py-1.5 rounded-full uppercase tracking-widest inline-block mb-4">
+                                    {oficina.ano} • Oficina #{oficina.oficina}
+                                </span>
+                                <h1 className="text-3xl font-black text-slate-900 leading-tight uppercase tracking-tighter">
+                                    {oficina.tema}
+                                </h1>
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
-                                <div className="space-y-1">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Professor(a)</label>
-                                    <div className="relative border-b-2 border-slate-100 focus-within:border-blue-500 transition-colors py-2">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                                {[
+                                    { label: 'Professor(a)', key: 'professor' },
+                                    { label: 'Turma', key: 'turma' },
+                                    { label: 'Tempo Previsto', key: 'tempo' },
+                                    { label: 'Kits LEGO®', key: 'kits' }
+                                ].map(f => (
+                                    <div key={f.key} className="border-b border-slate-100">
+                                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-2">{f.label}</label>
                                         <input 
-                                            type="text" 
-                                            value={formData.professor}
-                                            onChange={(e) => setFormData({...formData, professor: e.target.value})}
-                                            className="w-full bg-transparent outline-none font-bold text-slate-800 placeholder:text-slate-200" 
-                                            placeholder="Nome do docente"
+                                            className="w-full bg-transparent py-2 outline-none font-bold text-slate-800 no-print"
+                                            onChange={e => setForm({...form, [f.key]: e.target.value})}
+                                            placeholder="..."
                                         />
+                                        <div className="hidden print:block font-bold text-slate-800 pb-2">{form[f.key] || '---'}</div>
                                     </div>
-                                </div>
-                                <div className="space-y-1">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Turma / Grupo</label>
-                                    <div className="relative border-b-2 border-slate-100 focus-within:border-blue-500 transition-colors py-2">
-                                        <input 
-                                            type="text" 
-                                            value={formData.turma}
-                                            onChange={(e) => setFormData({...formData, turma: e.target.value})}
-                                            className="w-full bg-transparent outline-none font-bold text-slate-800 placeholder:text-slate-200" 
-                                            placeholder="Ex: 501, 602..."
-                                        />
-                                    </div>
-                                </div>
-                                <div className="space-y-1">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Tempo Previsto</label>
-                                    <div className="relative border-b-2 border-slate-100 focus-within:border-blue-500 transition-colors py-2">
-                                        <input 
-                                            type="text" 
-                                            value={formData.tempo}
-                                            onChange={(e) => setFormData({...formData, tempo: e.target.value})}
-                                            className="w-full bg-transparent outline-none font-bold text-slate-800 placeholder:text-slate-200" 
-                                            placeholder="Ex: 100 minutos"
-                                        />
-                                    </div>
-                                </div>
-                                <div className="space-y-1">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Qtd. de Kits</label>
-                                    <div className="relative border-b-2 border-slate-100 focus-within:border-blue-500 transition-colors py-2">
-                                        <input 
-                                            type="text" 
-                                            value={formData.kits}
-                                            onChange={(e) => setFormData({...formData, kits: e.target.value})}
-                                            className="w-full bg-transparent outline-none font-bold text-slate-800 placeholder:text-slate-200" 
-                                            placeholder="Número de kits"
-                                        />
-                                    </div>
-                                </div>
+                                ))}
                             </div>
 
-                            <div className="mt-10 space-y-1">
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Objetivos e Notas da Aula</label>
+                            <div className="mt-12">
+                                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-4">Objetivos e Roteiro</label>
+                                <div className="mb-6 p-4 bg-blue-50/50 rounded-xl border border-blue-100/50 text-sm text-slate-600 leading-relaxed italic">
+                                    <strong>Objetivo Base:</strong> {oficina.objetivo}
+                                </div>
                                 <textarea 
-                                    rows="6"
-                                    value={formData.observacoes}
-                                    onChange={(e) => setFormData({...formData, observacoes: e.target.value})}
-                                    className="w-full bg-slate-50 rounded-2xl p-4 outline-none text-slate-700 italic leading-relaxed border-none focus:ring-2 focus:ring-blue-100 transition-all"
-                                    placeholder="Escreva aqui como pretende conduzir a atividade..."
-                                ></textarea>
-                            </div>
-
-                            <div className="mt-16 text-center">
-                                <div className="font-['Caveat'] text-3xl text-blue-600 mb-2">Gracious Professionalism</div>
-                                <div className="text-[10px] font-black text-amber-600 bg-amber-50 inline-block px-4 py-2 rounded-full border border-amber-100 tracking-tighter uppercase">
-                                    ⚠️ Não esqueça de realizar o agendamento!
-                                </div>
+                                    className="w-full bg-slate-50 rounded-2xl p-6 min-h-[180px] outline-none text-slate-700 leading-relaxed no-print border border-transparent focus:border-blue-100 transition-all shadow-inner"
+                                    placeholder="Adicione suas observações pedagógicas..."
+                                    onChange={e => setForm({...form, obs: e.target.value})}
+                                />
+                                <div className="hidden print:block italic text-slate-600 whitespace-pre-wrap leading-loose">{form.obs || 'Procedimento padrão conforme guia docente.'}</div>
                             </div>
                         </div>
 
-                        {/* Footer Fixo */}
-                        <div className="p-6 bg-slate-50 flex justify-end gap-4 no-print border-t border-slate-100">
-                            <button onClick={onClose} className="px-6 py-3 text-xs font-black text-slate-400 uppercase hover:text-slate-600">Fechar</button>
+                        <div className="p-8 bg-white border-t border-slate-50 flex gap-4 no-print">
                             <button 
-                                onClick={handleExport}
-                                className="px-10 py-4 bg-blue-600 text-white rounded-2xl text-xs font-black uppercase tracking-widest shadow-xl shadow-blue-100 hover:scale-105 transition-all"
+                                onClick={() => window.print()}
+                                className="flex-1 bg-slate-900 text-white py-5 rounded-3xl text-xs font-black uppercase tracking-[0.2em] hover:bg-blue-600 transition-all transform hover:-translate-y-1 shadow-xl"
                             >
-                                Exportar PDF
+                                Imprimir Planejamento
                             </button>
                         </div>
                     </div>
@@ -191,133 +175,116 @@
 
         function App() {
             const [search, setSearch] = useState('');
-            const [filterYear, setFilterYear] = useState('Todos');
-            const [planningOficina, setPlanningOficina] = useState(null);
-            const [isCopied, setIsCopied] = useState(null);
+            const [year, setYear] = useState('Todos');
+            const [selected, setSelected] = useState(null);
 
             const years = ['Todos', '1º Ano', '2º Ano', '3º Ano', '4º Ano', '5º Ano', '6º Ano', '7º Ano', '8º Ano', '9º Ano'];
 
-            const results = useMemo(() => {
-                if (!search && filterYear === 'Todos') return [];
-                return rawData.filter(item => {
-                    const q = search.toLowerCase();
-                    const matchesText = item.tema.toLowerCase().includes(q) || item.bncc.toLowerCase().includes(q);
-                    const matchesYear = filterYear === 'Todos' || item.ano === filterYear;
-                    return matchesText && matchesYear;
+            const hasActiveSearch = search.trim().length > 0 || year !== 'Todos';
+
+            const filtered = useMemo(() => {
+                if (!hasActiveSearch) return [];
+                return rawData.filter(i => {
+                    const matchText = i.tema.toLowerCase().includes(search.toLowerCase()) || 
+                                     i.bncc.toLowerCase().includes(search.toLowerCase()) ||
+                                     i.objetivo.toLowerCase().includes(search.toLowerCase());
+                    const matchYear = year === 'Todos' || i.ano === year;
+                    return matchText && matchYear;
                 });
-            }, [search, filterYear]);
-
-            const copyToClipboard = (item) => {
-                const text = `OFICINA ROBÓTICA SJB\nTema: ${item.tema}\nAno: ${item.ano}\nBNCC: ${item.bncc}\nObjetivo: ${item.objetivo}`;
-                navigator.clipboard.writeText(text);
-                setIsCopied(item.id);
-                setTimeout(() => setIsCopied(null), 2000);
-            };
-
-            const isSearching = search !== '' || filterYear !== 'Todos';
+            }, [search, year, hasActiveSearch]);
 
             return (
-                <div className="min-h-screen flex flex-col items-center p-6 md:p-12">
-                    {/* Header */}
-                    <header className="w-full max-w-5xl flex items-center justify-between mb-20 no-print">
+                <div className="max-w-4xl mx-auto px-6 py-12 min-h-screen flex flex-col">
+                    <header className="flex items-center justify-between mb-8 no-print transition-opacity duration-500" style={{ opacity: hasActiveSearch ? 1 : 0.4 }}>
                         <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-slate-900 text-white rounded-xl flex items-center justify-center">
-                                <IconRobot />
-                            </div>
-                            <h1 className="text-xl font-black tracking-tighter text-slate-800 uppercase">Robótica SJB</h1>
+                            <div className="w-8 h-8 bg-slate-900 rounded-xl flex items-center justify-center text-white font-black">S</div>
+                            <span className="font-extrabold tracking-tighter text-slate-800 text-sm">ROBÓTICA SJB</span>
                         </div>
+                        <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Base de Dados Completa</span>
                     </header>
 
-                    <main className={`w-full max-w-3xl transition-all duration-700 no-print ${isSearching ? 'mt-0' : 'mt-20'}`}>
-                        
-                        {/* Hero Text */}
-                        {!isSearching && (
-                            <div className="text-center mb-12 fade-in">
-                                <h2 className="text-5xl font-black text-slate-800 mb-4 tracking-tight">O que vamos ensinar hoje?</h2>
-                                <p className="text-slate-400 font-medium text-lg">Selecione o ano escolar ou busque por uma oficina.</p>
-                            </div>
-                        )}
-
-                        {/* Search Input */}
-                        <div className={`relative transition-all duration-500 ${isSearching ? 'scale-100 mb-8' : 'scale-110'}`}>
-                            <div className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300">
-                                <IconSearch />
-                            </div>
-                            <input 
-                                type="text"
-                                placeholder="Tema da oficina ou BNCC..."
-                                className="w-full pl-16 pr-6 py-6 bg-white border-2 border-slate-100 rounded-[2rem] shadow-2xl shadow-slate-200/40 outline-none focus:border-blue-400 transition-all font-semibold text-lg"
-                                value={search}
-                                onChange={(e) => setSearch(e.target.value)}
-                            />
+                    <div className={`search-container flex-grow flex flex-col items-center justify-center transition-all duration-700 ${hasActiveSearch ? 'search-active pt-8' : 'pt-24 pb-32'}`}>
+                        <div className={`text-center transition-all duration-500 mb-12 ${hasActiveSearch ? 'scale-90 opacity-0 h-0 overflow-hidden mb-0' : 'scale-100 opacity-100'}`}>
+                            <h1 className="text-5xl md:text-6xl font-black text-slate-900 tracking-tighter mb-6">
+                                O que vamos<br/><span className="text-blue-600">ensinar hoje?</span>
+                            </h1>
+                            <p className="text-slate-400 font-medium text-lg max-w-md mx-auto leading-relaxed">
+                                Explore as oficinas de robótica. Digite um tema ou selecione o ano escolar para planejar sua aula.
+                            </p>
                         </div>
 
-                        {/* Chips de Anos */}
-                        <div className="flex flex-wrap justify-center gap-2 mb-12 no-print">
-                            {years.map(y => (
-                                <button 
-                                    key={y}
-                                    onClick={() => setFilterYear(y)}
-                                    className={`px-6 py-3 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${
-                                        filterYear === y 
-                                        ? 'bg-blue-600 text-white shadow-lg shadow-blue-200' 
-                                        : 'bg-white text-slate-400 hover:text-slate-800'
-                                    }`}
+                        <div className="w-full max-w-2xl no-print relative">
+                            <div className="relative group">
+                                <input 
+                                    type="text"
+                                    className="w-full bg-white py-6 px-10 rounded-[2.5rem] shadow-2xl shadow-slate-200/40 border border-slate-100 outline-none focus:ring-8 focus:ring-blue-50/50 transition-all text-slate-700 placeholder:text-slate-300 font-semibold text-lg"
+                                    placeholder="Ex: Terremotos, 9º ano, BNCC..."
+                                    value={search}
+                                    onChange={e => setSearch(e.target.value)}
+                                />
+                                <div className={`absolute right-8 top-1/2 -translate-y-1/2 transition-colors ${search ? 'text-blue-600' : 'text-slate-200'}`}>
+                                    <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="3"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+                                </div>
+                            </div>
+
+                            <div className="flex flex-wrap gap-2 mt-8 justify-center">
+                                {years.map(y => (
+                                    <button 
+                                        key={y}
+                                        onClick={() => setYear(y)}
+                                        className={`px-5 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${year === y ? 'bg-blue-600 text-white shadow-xl shadow-blue-100' : 'bg-white text-slate-400 hover:text-slate-800 border border-slate-100'}`}
+                                    >
+                                        {y}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+
+                    {hasActiveSearch && (
+                        <div className="grid grid-cols-1 gap-4 no-print mt-12 pb-24 fade-in">
+                            <div className="flex items-center justify-between mb-4 border-b border-slate-100 pb-4">
+                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Encontradas {filtered.length} oficinas</span>
+                                <button onClick={() => {setSearch(''); setYear('Todos');}} className="text-[10px] font-black text-blue-600 uppercase tracking-widest hover:underline">Limpar Filtros</button>
+                            </div>
+                            
+                            {filtered.length > 0 ? filtered.map(item => (
+                                <div 
+                                    key={item.id} 
+                                    onClick={() => setSelected(item)}
+                                    className="group bg-white p-6 rounded-[2rem] border border-slate-100 hover:border-blue-200 hover:shadow-xl hover:shadow-slate-200/30 transition-all cursor-pointer flex items-center justify-between"
                                 >
-                                    {y}
-                                </button>
-                            ))}
-                        </div>
-
-                        {/* Resultados */}
-                        {isSearching && (
-                            <div className="space-y-4 fade-in">
-                                {results.length > 0 ? (
-                                    results.map(item => (
-                                        <div key={item.id} className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-xl shadow-slate-200/20 group transition-all hover:border-blue-200">
-                                            <div className="flex flex-col md:flex-row gap-6 justify-between items-start md:items-center">
-                                                <div className="flex-grow">
-                                                    <div className="flex items-center gap-3 mb-2">
-                                                        <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest">#{item.oficina}</span>
-                                                        <span className="w-1 h-1 bg-slate-200 rounded-full"></span>
-                                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{item.ano}</span>
-                                                    </div>
-                                                    <h3 className="text-xl font-black text-slate-800 mb-2">{item.tema}</h3>
-                                                    <div className="text-xs font-bold text-slate-400 px-2 py-1 bg-slate-50 rounded inline-block">BNCC: {item.bncc}</div>
-                                                </div>
-                                                <div className="flex gap-2 w-full md:w-auto">
-                                                    <button 
-                                                        onClick={() => copyToClipboard(item)}
-                                                        className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${isCopied === item.id ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
-                                                    >
-                                                        {isCopied === item.id ? 'Pronto!' : <IconCopy />}
-                                                    </button>
-                                                    <button 
-                                                        onClick={() => setPlanningOficina(item)}
-                                                        className="flex-1 md:flex-none flex items-center justify-center gap-2 px-8 py-4 bg-slate-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-600 transition-all shadow-lg"
-                                                    >
-                                                        <IconPlan /> Planejar
-                                                    </button>
-                                                </div>
-                                            </div>
+                                    <div className="flex gap-6 items-center">
+                                        <div className="w-14 h-14 bg-slate-50 rounded-2xl flex items-center justify-center text-[10px] font-black text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors">
+                                            #{item.oficina}
                                         </div>
-                                    ))
-                                ) : (
-                                    <div className="text-center py-20 text-slate-300 font-bold uppercase tracking-widest">Nenhuma oficina encontrada</div>
-                                )}
-                            </div>
-                        )}
-                    </main>
+                                        <div>
+                                            <div className="flex items-center gap-3 mb-1">
+                                                <span className="text-[9px] font-black text-blue-500 uppercase tracking-widest">{item.ano}</span>
+                                                <span className="text-[9px] font-bold text-slate-300 uppercase tracking-widest">{item.bncc}</span>
+                                            </div>
+                                            <h3 className="text-base font-black text-slate-700 uppercase tracking-tight group-hover:text-slate-900">{item.tema}</h3>
+                                        </div>
+                                    </div>
+                                    <div className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-50 text-slate-200 group-hover:bg-blue-600 group-hover:text-white transition-all">
+                                        <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="3"><path d="M9 18l6-6-6-6"/></svg>
+                                    </div>
+                                </div>
+                            )) : (
+                                <div className="text-center py-20 bg-slate-50 rounded-[3rem] border-2 border-dashed border-slate-100">
+                                    <div className="text-slate-300 text-[10px] font-black uppercase tracking-[0.3em]">Nenhum resultado para esta busca</div>
+                                </div>
+                            )}
+                        </div>
+                    )}
 
-                    <Modal 
-                        isOpen={!!planningOficina} 
-                        onClose={() => setPlanningOficina(null)} 
-                        selectedOficina={planningOficina || {}} 
-                    />
-                    
-                    <footer className="mt-auto py-10 text-[10px] font-black text-slate-300 uppercase tracking-[0.4em] no-print">
-                        SJB Robótica &copy; 2026
-                    </footer>
+                    {!hasActiveSearch && (
+                        <footer className="py-8 text-center no-print">
+                            <p className="text-[10px] font-black text-slate-200 uppercase tracking-[0.4em]">SJB • Secretaria de Educação</p>
+                        </footer>
+                    )}
+
+                    <Modal isOpen={!!selected} onClose={() => setSelected(null)} oficina={selected || {}} />
                 </div>
             );
         }
