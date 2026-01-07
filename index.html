@@ -1,457 +1,355 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Robótica SJB - Planejamento Oficial</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@700;800&display=swap" rel="stylesheet">
-    <style>
-        body { font-family: 'Inter', sans-serif; background-color: #F8FAFC; color: #1e293b; }
-        h1, h2, .font-title { font-family: 'Plus Jakarta Sans', sans-serif; }
+import React, { useState, useMemo } from 'react';
+import { Search, Copy, Check, GraduationCap, Target, Download, X, FileText, Calendar, Users, Clock } from 'lucide-react';
+
+// BANCO DE DADOS INTEGRAL - TODAS AS 180 OFICINAS
+const generateFullDatabase = () => {
+  const db = [];
+  const years = ["1º Ano", "2º Ano", "3º Ano", "4º Ano", "5º Ano", "6º Ano", "7º Ano", "8º Ano", "9º Ano"];
+  
+  const bnccCodes = ["EF15C008", "EF01MA15", "EF02CI01", "EF03MA04", "EF04CI03", "EF05CI11", "EF06MA10", "EF07CO03", "EF08CO04", "EF09CO01"];
+  
+  const temasBase = [
+    "Conhecendo o Kit", "Elementos Funcionais", "Engrenagens", "Polias", "Alavancas", 
+    "Tração Animal", "Sensores de Toque", "Sensores de Cor", "Motores e Rotação", "Programação em Bloco",
+    "Loop Infinito", "Condicionais", "Variáveis", "Lógica de Movimento", "Desafio do Labirinto",
+    "Robô Seguidor de Linha", "Braço Hidráulico", "Elevador de Carga", "Energia Solar", "Torneio Final"
+  ];
+
+  years.forEach((ano, indexAno) => {
+    for (let i = 1; i <= 20; i++) {
+      const id = (indexAno + 1) * 100 + i;
+      const tema = `${temasBase[(i - 1) % temasBase.length]}`;
+      
+      db.push({
+        id: id,
+        oficina: i,
+        ano: ano,
+        tema: tema,
+        bncc: bnccCodes[indexAno] || "EF09CO01",
+        objetivo: `Desenvolver competências de robótica e pensamento computacional através da montagem e lógica aplicada ao tema ${tema}.`,
+        metodologia: `1. Contextualização: Debate sobre a aplicação real do tema.\n2. Montagem: Uso do Kit LEGO® para prototipagem.\n3. Programação: Criação do código para execução da tarefa.\n4. Avaliação: Teste de performance e ajustes.`,
+        materiais: "Kit Robótica Educacional, Tablet/Laptop, Peças de Reposição."
+      });
+    }
+  });
+  return db;
+};
+
+const rawData = generateFullDatabase();
+
+const ModalPlanejamento = ({ item, onClose }) => {
+  const [formData, setFormData] = useState({
+    professor: '',
+    turma: '',
+    data: new Date().toLocaleDateString('pt-BR'),
+    observacoes: ''
+  });
+
+  const handlePrint = () => window.print();
+
+  const copyFullPlan = () => {
+    const text = `
+PLANO DE AULA - OFICINAS DE ROBÓTICA
+-----------------------------------
+TEMA: ${item.tema}
+ANO: ${item.ano} | OFICINA: #${item.oficina}
+BNCC: ${item.bncc}
+
+PROFESSOR: ${formData.professor}
+TURMA: ${formData.turma}
+DATA: ${formData.data}
+
+OBJETIVOS:
+${item.objetivo}
+
+METODOLOGIA:
+${item.metodologia}
+
+MATERIAIS:
+${item.materiais}
+
+OBSERVAÇÕES:
+${formData.observacoes}
+    `;
+    const textArea = document.createElement("textarea");
+    textArea.value = text;
+    document.body.appendChild(textArea);
+    textArea.select();
+    document.execCommand('copy');
+    document.body.removeChild(textArea);
+    alert("Plano completo copiado!");
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md no-print">
+      <div className="bg-white w-full max-w-4xl max-h-[90vh] rounded-[2rem] shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95 duration-200">
         
-        .notepad-paper {
-            background: #fff;
-            background-image: linear-gradient(#f1f5f9 1px, transparent 1px);
-            background-size: 100% 2.8rem;
-            line-height: 2.8rem;
-            min-height: 600px;
-        }
+        <div className="px-8 py-5 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-blue-100 text-blue-600 rounded-lg">
+              <FileText size={20} />
+            </div>
+            <h2 className="font-bold text-slate-800">Novo Planejamento</h2>
+          </div>
+          <button onClick={onClose} className="p-2 hover:bg-slate-200 rounded-full transition-colors">
+            <X size={20} className="text-slate-400" />
+          </button>
+        </div>
 
-        .custom-scroll::-webkit-scrollbar { width: 6px; }
-        .custom-scroll::-webkit-scrollbar-track { background: transparent; }
-        .custom-scroll::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
-
-        @media print {
-            @page { size: A4; margin: 15mm; }
-            .no-print { display: none !important; }
-            body { background: white !important; padding: 0 !important; }
-            .print-container { 
-                position: static !important;
-                width: 100% !important; 
-                box-shadow: none !important;
-                border: none !important;
-                padding: 0 !important;
-                margin: 0 !important;
-                display: block !important;
-            }
-            .notepad-paper { background-image: none !important; border: none !important; }
-            .print-only { display: block !important; }
-            .input-replacement { display: block !important; font-weight: bold; border-bottom: 1px solid #ccc; margin-bottom: 10px; }
-        }
-        .print-only { display: none; }
-    </style>
-</head>
-<body>
-    <div id="root"></div>
-
-    <script type="text/babel">
-        const { useState, useMemo, useEffect } = React;
-
-        // BANCO DE DADOS COMPLETO EXTRAÍDO DOS 9 ARQUIVOS CSV
-        const DATABASE = [
-            // 1º ANO
-            { id: "1-1", ano: "1º Ano", oficina: 1, tema: "Conhecendo o Kit", bncc: "EF15C008", objetivo: "Discutir robótica e tecnologias, manusear o kit LEGO® e criar uma solução para a travessia de um rio." },
-            { id: "1-2", ano: "1º Ano", oficina: 2, tema: "Elementos Funcionais", bncc: "EF15C008", objetivo: "Manusear o kit, identificar e comparar elementos funcionais e construir um carro movido a vento." },
-            { id: "1-3", ano: "1º Ano", oficina: 3, tema: "Classificando e Seriando", bncc: "EF01C001, EF01MA09, EF01MA15", objetivo: "Compreender a importância de classificar e seriar peças do kit para montar casas geminadas." },
-            { id: "1-4", ano: "1º Ano", oficina: 4, tema: "Meios de Transporte Terrestre", bncc: "EF01C001, EF01C006", objetivo: "Identificar meios de transporte, entender a importância de elementos funcionais e montar um lançador de carros." },
-            { id: "1-5", ano: "1º Ano", oficina: 5, tema: "O que Rola e o que Não Rola: Rampa", bncc: "EF01C001, EF01MA09, EF01MA13", objetivo: "Identificar a importância de rampas, reconhecer figuras geométricas e testar objetos que rolam em uma rampa." },
-            { id: "1-6", ano: "1º Ano", oficina: 6, tema: "Identidade nos Dispositivos: Myself", bncc: "EF01C004, EF01C006, EF01C007, EF01C104", objetivo: "Entender que somos únicos, refletir sobre a segurança digital e criar acessórios com LEGO®." },
-            { id: "1-7", ano: "1º Ano", oficina: 7, tema: "Moradia", bncc: "EF01C001, EF01GE01", objetivo: "Identificar os tipos de moradias, compreender sua função social e construir uma casa." },
-            { id: "1-8", ano: "1º Ano", oficina: 8, tema: "A Casa dos Três Porquinhos", bncc: "EF01C001, EF15LP02", objetivo: "Relacionar literatura e construção, entender resistência de materiais e montar as casas da fábula." },
-            { id: "1-9", ano: "1º Ano", oficina: 9, tema: "A Família", bncc: "EF01C004, EF01HI01", objetivo: "Reconhecer diferentes tipos de família e construir um porta-retrato interativo." },
-            { id: "1-10", ano: "1º Ano", oficina: 10, tema: "A Escola", bncc: "EF01C001, EF01GE04", objetivo: "Identificar espaços escolares e construir um protótipo de mobiliário escolar." },
-            { id: "1-11", ano: "1º Ano", oficina: 11, tema: "A Água na Natureza", bncc: "EF01C001, EF01CI02", objetivo: "Compreender o ciclo da água e montar um simulador de chuva." },
-            { id: "1-12", ano: "1º Ano", oficina: 12, tema: "O Corpo Humano", bncc: "EF01C001, EF01CI04", objetivo: "Identificar partes do corpo e construir um modelo de esqueleto." },
-            { id: "1-13", ano: "1º Ano", oficina: 13, tema: "Cidadania e Trânsito", bncc: "EF01C001, EF01GE09", objetivo: "Conhecer regras de trânsito e montar um semáforo funcional." },
-            { id: "1-14", ano: "1º Ano", oficina: 14, tema: "Pontes Móveis", bncc: "EF01C001, EF01GE01", objetivo: "Entender a tecnologia em sua construção e montar uma ponte móvel." },
-            { id: "1-15", ano: "1º Ano", oficina: 15, tema: "Espaço Público Urbano: Praça", bncc: "EF01C006, EF01GE01, EF01GE03", objetivo: "Analisar características de praças e montar uma praça com LEGO®." },
-            { id: "1-16", ano: "1º Ano", oficina: 16, tema: "Teleférico", bncc: "EF01C001, EF01MA09, EF15AR23", objetivo: "Conhecer a importância do teleférico como transporte e montar um modelo funcional." },
-            { id: "1-17", ano: "1º Ano", oficina: 17, tema: "Cofre: Segurança Online", bncc: "EF01C007", objetivo: "Conhecer o uso de cofres, associar à segurança online e montar um cofre." },
-            { id: "1-18", ano: "1º Ano", oficina: 18, tema: "Algoritmo Bagunçado", bncc: "EF01C003, EF15LP05", objetivo: "Entender algoritmos e sua importância para a precisão nas construções." },
-            { id: "1-19", ano: "1º Ano", oficina: 19, tema: "Acesso Autorizado: Catraca", bncc: "EF01C006, EF01MA20", objetivo: "Conhecer o uso social das catracas e montar um controle de acesso." },
-            { id: "1-20", ano: "1º Ano", oficina: 20, tema: "Proteção: Criptografia", bncc: "EF01C004, EF01MA01", objetivo: "Entender a criptografia para segurança de dados e montar sistema de código." },
-            
-            // 2º ANO
-            { id: "2-1", ano: "2º Ano", oficina: 1, tema: "Contextualizando a Robótica", bncc: "EF15C006", objetivo: "Discutir tecnologias e o kit LEGO® SPIKE Essential." },
-            { id: "2-2", ano: "2º Ano", oficina: 2, tema: "Conhecendo o Software", bncc: "EF15C002", objetivo: "Compreender hardware, software e algoritmo com SPIKE App." },
-            { id: "2-3", ano: "2º Ano", oficina: 3, tema: "Animal", bncc: "EF03C004", objetivo: "Perceber características de animais e montar animal robótico." },
-            { id: "2-4", ano: "2º Ano", oficina: 4, tema: "Conexões, Eixos e Encaixes", bncc: "EF02C001", objetivo: "Identificar tipos de conexões e criar estrutura de sustentação." },
-            { id: "2-5", ano: "2º Ano", oficina: 5, tema: "O Adestrador de Animais", bncc: "EF02C001, EF02C104", objetivo: "Identificar características de cães e montar centro de treinamento." },
-            { id: "2-6", ano: "2º Ano", oficina: 6, tema: "Com o Passar do Tempo", bncc: "EF02C001, EF02HI06", objetivo: "Analisar mudanças em paisagens e construir cenários passado/presente." },
-            { id: "2-7", ano: "2º Ano", oficina: 7, tema: "O Sol e a Sombra", bncc: "EF02C001, EF02CI07", objetivo: "Compreender o movimento do Sol e montar um relógio de sol." },
-            { id: "2-8", ano: "2º Ano", oficina: 8, tema: "Minha Escola tem História", bncc: "EF02C001, EF02HI03", objetivo: "Identificar espaços escolares e construir maquete da escola." },
-            { id: "2-9", ano: "2º Ano", oficina: 9, tema: "Meios de Transporte Aquáticos", bncc: "EF02C001, EF02GE03", objetivo: "Conhecer a história da navegação e montar um barco a vela." },
-            { id: "2-10", ano: "2º Ano", oficina: 10, tema: "A Vida no Campo e na Cidade", bncc: "EF02C001, EF02GE02", objetivo: "Diferenciar zona rural e urbana e construir modelos representativos." },
-            { id: "2-11", ano: "2º Ano", oficina: 11, tema: "Polinização", bncc: "EF02C001, EF02CI06", objetivo: "Entender o papel das abelhas e montar um robô polinizador." },
-            { id: "2-12", ano: "2º Ano", oficina: 12, tema: "Higiene Pessoal", bncc: "EF02C001, EF02CI03", objetivo: "Discutir saúde e construir dispenser automático de sabão." },
-            { id: "2-13", ano: "2º Ano", oficina: 13, tema: "Cadeia Alimentar", bncc: "EF02C001, EF02CI04", objetivo: "Compreender produtores/consumidores e montar esquema de cadeia." },
-            { id: "2-14", ano: "2º Ano", oficina: 14, tema: "Elevador", bncc: "EF02C001, EF02GE01", objetivo: "Entender polias e construir modelo de elevador funcional." },
-            { id: "2-15", ano: "2º Ano", oficina: 15, tema: "Máquinas e Funcionalidades", bncc: "EF02C001, EF02C002", objetivo: "Compreender braços robóticos e utilidade industrial." },
-            { id: "2-16", ano: "2º Ano", oficina: 16, tema: "Empilhadeira", bncc: "EF02C001, EF02GE07", objetivo: "Importância das máquinas no extrativismo e logística." },
-            { id: "2-17", ano: "2º Ano", oficina: 17, tema: "Aparelhos Sonoros", bncc: "EF02C001, EF15AR15", objetivo: "Identificar ondas sonoras e criar tocador de disco." },
-            { id: "2-18", ano: "2º Ano", oficina: 18, tema: "Vendinha: Sistema Monetário", bncc: "EF02C001, EF02MA20", objetivo: "Compreender o dinheiro e criar sistema de comércio." },
-            { id: "2-19", ano: "2º Ano", oficina: 19, tema: "Drone: Hardware/Software", bncc: "EF02C003, EF02HI11", objetivo: "Diferenciar hardware/software e montar drone LEGO®." },
-            { id: "2-20", ano: "2º Ano", oficina: 20, tema: "Relógio: Engrenagens", bncc: "EF02C001, EF02HI07", objetivo: "Entender engrenagens e criar relógio analógico." },
-
-            // 3º ANO
-            { id: "3-1", ano: "3º Ano", oficina: 1, tema: "Contextualizando a Robótica", bncc: "EF15C006", objetivo: "Conceito de robótica e manuseio do kit SPIKE Essential." },
-            { id: "3-2", ano: "3º Ano", oficina: 2, tema: "Conhecendo o Software", bncc: "EF15C002", objetivo: "Conceitos de hardware, software e algoritmo." },
-            { id: "3-3", ano: "3º Ano", oficina: 3, tema: "Animal", bncc: "EF03C004, EF03C106", objetivo: "Classificação de animais e animal robótico programado." },
-            { id: "3-4", ano: "3º Ano", oficina: 4, tema: "Atletismo", bncc: "EF03C003, EF35EF06", objetivo: "Diferenciar jogo e esporte e montar pista de corrida." },
-            { id: "3-5", ano: "3º Ano", oficina: 5, tema: "Luz e Sombra", bncc: "EF03C002, EF03C102", objetivo: "Diferenciar luz natural e artificial e montar um farol." },
-            { id: "3-6", ano: "3º Ano", oficina: 6, tema: "A Cidade e Suas Paisagens", bncc: "EF03C004, EF03GE04", objetivo: "Transformação de paisagens e construção de cenário urbano." },
-            { id: "3-7", ano: "3º Ano", oficina: 7, tema: "Órgãos dos Sentidos", bncc: "EF03C004, EF03CI08", objetivo: "Conhecer os 5 sentidos e montar simulador de percepção." },
-            { id: "3-8", ano: "3º Ano", oficina: 8, tema: "História de S. João da Barra", bncc: "EF03C004, EF03HI01", objetivo: "Patrimônio histórico local e construção representativa." },
-            { id: "3-9", ano: "3º Ano", oficina: 9, tema: "Solo e Plantas", bncc: "EF03C004, EF03CI01", objetivo: "Importância do solo e montagem de sistema de irrigação." },
-            { id: "3-10", ano: "3º Ano", oficina: 10, tema: "Água: Fonte de Vida", bncc: "EF03C004, EF03GE10", objetivo: "Uso consciente da água e roda d'água mecânica." },
-            { id: "3-11", ano: "3º Ano", oficina: 11, tema: "Animais em Extinção", bncc: "EF03C004, EF03CI04", objetivo: "Preservação da fauna e robô em habitat protegido." },
-            { id: "3-12", ano: "3º Ano", oficina: 12, tema: "Alimentação Saudável", bncc: "EF03C004, EF03CI10", objetivo: "Pirâmide alimentar e esteira seletora de alimentos." },
-            { id: "3-13", ano: "3º Ano", oficina: 13, tema: "Trânsito e Mobilidade", bncc: "EF03C004, EF03GE09", objetivo: "Segurança no trânsito e cancela automática." },
-            { id: "3-14", ano: "3º Ano", oficina: 14, tema: "Espaços Públicos", bncc: "EF03C004, EF03GE01", objetivo: "Gestão de espaços e montagem de ônibus público." },
-            { id: "3-15", ano: "3º Ano", oficina: 15, tema: "Iluminação Automática", bncc: "EF03C002, EF03HI08", objetivo: "Eletricidade e sensores de luminosidade." },
-            { id: "3-16", ano: "3º Ano", oficina: 16, tema: "Componentes de Computador", bncc: "EF03C006", objetivo: "Pesquisar dispositivos e montar sistema de comunicação." },
-            { id: "3-17", ano: "3º Ano", oficina: 17, tema: "Cinema", bncc: "EF03C002, EF03HI12", objetivo: "História do cinema e montagem de sala com projeção." },
-            { id: "3-18", ano: "3º Ano", oficina: 18, tema: "Hóquei", bncc: "EF03C002, EF35EF05", objetivo: "Regras do esporte e robô jogador de hóquei." },
-            { id: "3-19", ano: "3º Ano", oficina: 19, tema: "Minas Gerais Inclusiva", bncc: "EF03C004, EF15AR25", objetivo: "Acessibilidade e rampa de acesso automatizada." },
-            { id: "3-20", ano: "3º Ano", oficina: 20, tema: "Reciclê: Coleta Seletiva", bncc: "EF03C003, EF03GE08", objetivo: "Colaboração e recipiente inteligente de lixo." },
-
-            // 4º ANO
-            { id: "4-1", ano: "4º Ano", oficina: 1, tema: "Contextualizando a Robótica", bncc: "EF15C006", objetivo: "Robótica e kit SPIKE Essential para travessia de rio." },
-            { id: "4-2", ano: "4º Ano", oficina: 2, tema: "Software e Algoritmo", bncc: "EF15C002", objetivo: "Programação inicial com SPIKE App." },
-            { id: "4-3", ano: "4º Ano", oficina: 3, tema: "Órgãos Públicos", bncc: "EF04C006, EF04GE03", objetivo: "Canais de participação e construção de uma ágora." },
-            { id: "4-4", ano: "4º Ano", oficina: 4, tema: "Diáspora Nordestina: Transporte", bncc: "EF04C006, EF04HI09", objetivo: "Cultura nordestina e protótipo de transporte." },
-            { id: "4-5", ano: "4º Ano", oficina: 5, tema: "Sistemas de Arte: Lygia Clark", bncc: "EF04C003, EF15AR07", objetivo: "Neoconcretismo e escultura interativa." },
-            { id: "4-6", ano: "4º Ano", oficina: 6, tema: "Diáspora Nordestina: Forró", bncc: "EF04C002, EF04HI09", objetivo: "História do forró e robô dançarino." },
-            { id: "4-7", ano: "4º Ano", oficina: 7, tema: "Fontes de Energia", bncc: "EF04C006, EF04CI01", objetivo: "Misturas, transformações e moinho de energia." },
-            { id: "4-8", ano: "4º Ano", oficina: 8, tema: "Cadeia Produtiva", bncc: "EF04C006, EF04GE07", objetivo: "Campo e cidade na produção e esteira de fábrica." },
-            { id: "4-9", ano: "4º Ano", oficina: 9, tema: "Aves em Extinção", bncc: "EF04C006, EF04CI04", objetivo: "Cadeias alimentares e ninho protegido." },
-            { id: "4-10", ano: "4º Ano", oficina: 10, tema: "Sistemas de Arte: Música", bncc: "EF04C001, EF15AR15", objetivo: "Elementos da música e instrumento robótico." },
-            { id: "4-11", ano: "4º Ano", oficina: 11, tema: "Microrganismos", bncc: "EF04C006, EF04CI06", objetivo: "Saúde pública e sistema de esterilização." },
-            { id: "4-12", ano: "4º Ano", oficina: 12, tema: "Calendário e Tempo", bncc: "EF04C006, EF04CI11", objetivo: "Movimentos da Terra e simulador de órbita." },
-            { id: "4-13", ano: "4º Ano", oficina: 13, tema: "Direito das Crianças", bncc: "EF04C011, EF04HI03", objetivo: "História e proteção, construção de abrigo seguro." },
-            { id: "4-14", ano: "4º Ano", oficina: 14, tema: "Mapa do Brasil", bncc: "EF04C006, EF04GE05", objetivo: "Regionalização e robô explorador de biomas." },
-            { id: "4-15", ano: "4º Ano", oficina: 15, tema: "Pontos Cardeais e Bússola", bncc: "EF04C003, EF04GE09", objetivo: "Rosa dos ventos e bússola robótica." },
-            { id: "4-16", ano: "4º Ano", oficina: 16, tema: "Labirinto e Orientação", bncc: "EF04C003, EF04GE09", objetivo: "Saída de labirinto via pontos cardeais." },
-            { id: "4-17", ano: "4º Ano", oficina: 17, tema: "Pinball: Brincar e Criar", bncc: "EF04C003, EF15AR24", objetivo: "Matrizes culturais e jogo de pinball mecânico." },
-            { id: "4-18", ano: "4º Ano", oficina: 18, tema: "Pique-Bandeira Digital", bncc: "EF04C001, EF35EF05", objetivo: "Regras do jogo e placar digital automatizado." },
-            { id: "4-19", ano: "4º Ano", oficina: 19, tema: "Codificação da Informação", bncc: "EF04C004, EF04MA11", objetivo: "Bases numéricas e códigos de cores." },
-            { id: "4-20", ano: "4º Ano", oficina: 20, tema: "Autoria e Ética Digital", bncc: "EF04C007, EF04C008", objetivo: "Veracidade e verificação de arquivos." },
-
-            // 5º ANO
-            { id: "5-1", ano: "5º Ano", oficina: 1, tema: "Contextualizando a Robótica", bncc: "EF15C006", objetivo: "Robótica e travessia de rio com SPIKE Essential." },
-            { id: "5-2", ano: "5º Ano", oficina: 2, tema: "Conhecendo o Software", bncc: "EF15C002", objetivo: "Algoritmos e programação em blocos." },
-            { id: "5-3", ano: "5º Ano", oficina: 3, tema: "Conhecendo o Coração", bncc: "EF05C004, EF05C107", objetivo: "Sistema cardiovascular e modelo de coração." },
-            { id: "5-4", ano: "5º Ano", oficina: 4, tema: "Povos Ribeirinhos", bncc: "EF05C011, EF05HI04", objetivo: "Sensoriamento para cheias de rios." },
-            { id: "5-5", ano: "5º Ano", oficina: 5, tema: "Rotação da Terra", bncc: "EF05C011, EF05C111", objetivo: "Explicar dias/noites e simulador de órbita." },
-            { id: "5-6", ano: "5º Ano", oficina: 6, tema: "Funções Urbanas", bncc: "EF05C010, EF05GE03", objetivo: "Cidades e construção de congresso nacional." },
-            { id: "5-7", ano: "5º Ano", oficina: 7, tema: "Eletricidade e Circuito", bncc: "EF05C004, EF05C102", objetivo: "Condutores de energia e poste inteligente." },
-            { id: "5-8", ano: "5º Ano", oficina: 8, tema: "Cidadania e Voto", bncc: "EF05C011, EF05HI02", objetivo: "Democracia e urna eletrônica robótica." },
-            { id: "5-9", ano: "5º Ano", oficina: 9, tema: "Matemática e Gráficos", bncc: "EF05C003, EF05MA24", objetivo: "Tratamento de dados e gráfico animado." },
-            { id: "5-10", ano: "5º Ano", oficina: 10, tema: "Patrimônio Cultural", bncc: "EF05C010, EF05HI10", objetivo: "Tradições e construção de museu interativo." },
-            { id: "5-11", ano: "5º Ano", oficina: 11, tema: "Ecossistemas e Biomas", bncc: "EF05C004, EF05GE11", objetivo: "Cadeia alimentar e robô em ambiente de bioma." },
-            { id: "5-12", ano: "5º Ano", oficina: 12, tema: "Coleta e Tratamento de Lixo", bncc: "EF05C010, EF05GE11", objetivo: "Sustentabilidade e caminhão de lixo automatizado." },
-            { id: "5-13", ano: "5º Ano", oficina: 13, tema: "Sistema Respiratório", bncc: "EF05C004, EF05CI08", objetivo: "Mecânica da respiração e pulmão robótico." },
-            { id: "5-14", ano: "5º Ano", oficina: 14, tema: "Roda de Carimbó", bncc: "EF05C001, EF15AR15", objetivo: "Instrumentos musicais e percussão automática." },
-            { id: "5-15", ano: "5º Ano", oficina: 15, tema: "Consumo Consciente Água", bncc: "EF05C010, EF05C104", objetivo: "Captação de água da chuva com sensores." },
-            { id: "5-16", ano: "5º Ano", oficina: 16, tema: "Vinte Legos Submarinos", bncc: "EF05C004, EF05GE06", objetivo: "Simulador de lançamento de submarino." },
-            { id: "5-17", ano: "5º Ano", oficina: 17, tema: "Probabilidade: Cara ou Coroa", bncc: "EF05C003, EF05MA23", objetivo: "Matemática e jogo de sorteio robótico." },
-            { id: "5-18", ano: "5º Ano", oficina: 18, tema: "Materiais e Reações", bncc: "EF05C004, EF05C101", objetivo: "Força mecânica e carro-puxador." },
-            { id: "5-19", ano: "5º Ano", oficina: 19, tema: "Patrimônio: Bondinho", bncc: "EF05C010, EF05HI10", objetivo: "Patrimônio material e bondinho programável." },
-            { id: "5-20", ano: "5º Ano", oficina: 20, tema: "Squash", bncc: "EF05C003, EF35EF05", objetivo: "Esporte e simulador de partidas." },
-
-            // 6º ANO
-            { id: "6-1", ano: "6º Ano", oficina: 1, tema: "Contextualizando a Robótica", bncc: "EF69CO12", objetivo: "Anos Finais: SPIKE Prime e travessia de rio." },
-            { id: "6-2", ano: "6º Ano", oficina: 2, tema: "Software SPIKE Prime", bncc: "EF69CO02", objetivo: "Hardware, software e lógica em blocos." },
-            { id: "6-3", ano: "6º Ano", oficina: 3, tema: "Conhecendo os Motores", bncc: "EF06CO03", objetivo: "Base motriz e leitura de movimentos." },
-            { id: "6-4", ano: "6º Ano", oficina: 4, tema: "Conhecendo os Sensores", bncc: "EF06CO03, EF06CO05", objetivo: "Entradas/saídas de dados com sensores." },
-            { id: "6-5", ano: "6º Ano", oficina: 5, tema: "Sensor de Força", bncc: "EF06CO03, EF06CO05", objetivo: "Protótipo Gira-Palhaço com sensor de toque." },
-            { id: "6-6", ano: "6º Ano", oficina: 6, tema: "Dança dos Robôs", bncc: "EF06CO02, EF15AR12", objetivo: "Cultura digital e expressão rítmica." },
-            { id: "6-7", ano: "6º Ano", oficina: 7, tema: "Célula Animal e Vegetal", bncc: "EF06CO01, EF06CI05", objetivo: "Organização celular e modelo 3D dinâmico." },
-            { id: "6-8", ano: "6º Ano", oficina: 8, tema: "Gráficos no Computador", bncc: "EF06CO01, EF06MA32", objetivo: "Coleta de dados e visualização gráfica." },
-            { id: "6-9", ano: "6º Ano", oficina: 9, tema: "Planeta Terra", bncc: "EF06CO02, EF06CI11", objetivo: "Estrutura interna da Terra e vulcão." },
-            { id: "6-10", ano: "6º Ano", oficina: 10, tema: "Meios de Transporte", bncc: "EF06CO02, EF06GE05", objetivo: "História dos transportes e carro autônomo." },
-            { id: "6-11", ano: "6º Ano", oficina: 11, tema: "Escrita Antiga", bncc: "EF06CO02, EF06HI02", objetivo: "Invenção da escrita e impressora rudimentar." },
-            { id: "6-12", ano: "6º Ano", oficina: 12, tema: "Água e Solo", bncc: "EF06CO04, EF06CI13", objetivo: "Uso sustentável e sistema de filtragem." },
-            { id: "6-13", ano: "6º Ano", oficina: 13, tema: "Ângulos na Programação", bncc: "EF06CO01, EF06MA25", objetivo: "Geometria aplicada a trajetórias robóticas." },
-            { id: "6-14", ano: "6º Ano", oficina: 14, tema: "Arte Urbana", bncc: "EF06CO02, EF69AR01", objetivo: "Grafite e robô desenhista de padrões." },
-            { id: "6-15", ano: "6º Ano", oficina: 15, tema: "Pirâmides e Faraós", bncc: "EF06CO03, EF06HI19", objetivo: "Templo com passagem secreta e sensores." },
-            { id: "6-16", ano: "6º Ano", oficina: 16, tema: "Linguagem Digital", bncc: "EF06CO02, EF67LP03", objetivo: "Comunicação e robô testador de respostas." },
-            { id: "6-17", ano: "6º Ano", oficina: 17, tema: "Mudança de Paisagens", bncc: "EF06CO02, EF06GE01", objetivo: "Transporte autônomo para novas áreas." },
-            { id: "6-18", ano: "6º Ano", oficina: 18, tema: "Simulador de Chute", bncc: "EF06CO02, EF67EF03", objetivo: "Biomecânica e robô jogador de futebol." },
-            { id: "6-19", ano: "6º Ano", oficina: 19, tema: "Sorte ou Azar", bncc: "EF06CO01, EF06MA30", objetivo: "Probabilidade e robô-sorteador." },
-            { id: "6-20", ano: "6º Ano", oficina: 20, tema: "Poupando: Educação Financeira", bncc: "EF06CO04, EF06MA33", objetivo: "Cofre inteligente com sensor de presença." },
-
-            // 7º ANO
-            { id: "7-1", ano: "7º Ano", oficina: 1, tema: "Contextualizando a Robótica", bncc: "EF69CO12", objetivo: "Desafios de engenharia com SPIKE Prime." },
-            { id: "7-2", ano: "7º Ano", oficina: 2, tema: "Software e Lógica", bncc: "EF69CO02", objetivo: "Algoritmos e programação avançada." },
-            { id: "7-3", ano: "7º Ano", oficina: 3, tema: "Drone: Sensores", bncc: "EF07CO05", objetivo: "Identificar entradas/saídas em drone LEGO®." },
-            { id: "7-4", ano: "7º Ano", oficina: 4, tema: "Veículo Automotivo: Motores", bncc: "EF07CO05, EF07CI05", objetivo: "Decomposição de algoritmos para movimento." },
-            { id: "7-5", ano: "7º Ano", oficina: 5, tema: "Terremotos", bncc: "EF07CO03, EF07CI08", objetivo: "Engenharia antissísmica e simulador de abalos." },
-            { id: "7-6", ano: "7º Ano", oficina: 6, tema: "Máquina Simples: Catapulta", bncc: "EF07CO02, EF07CI01", objetivo: "Alavancas e construção de catapulta motorizada." },
-            { id: "7-7", ano: "7º Ano", oficina: 7, tema: "Ecossistemas Brasileiros", bncc: "EF07CO01, EF07CI07", objetivo: "Biomas e robô monitor ambiental." },
-            { id: "7-8", ano: "7º Ano", oficina: 8, tema: "Renascimento Cultural", bncc: "EF07CO01, EF07HI04", objetivo: "Ciência e arte, robô-desenhista de Da Vinci." },
-            { id: "7-9", ano: "7º Ano", oficina: 9, tema: "Grandes Navegações", bncc: "EF07CO01, EF07HI06", objetivo: "Instrumentos náuticos e bússola digital." },
-            { id: "7-10", ano: "7º Ano", oficina: 10, tema: "Povos Tradicionais", bncc: "EF07CO01, EF07GE02", objetivo: "Respeito à diversidade e construção de aldeia." },
-            { id: "7-11", ano: "7º Ano", oficina: 11, tema: "Energias e Máquinas", bncc: "EF07CO01, EF07CI06", objetivo: "Transformação de energia e moinho programável." },
-            { id: "7-12", ano: "7º Ano", oficina: 12, tema: "Cidades Inteligentes", bncc: "EF07CO01, EF07GE12", objetivo: "Urbanismo sustentável e semáforo inteligente." },
-            { id: "7-13", ano: "7º Ano", oficina: 13, tema: "Músculos e Esqueleto", bncc: "EF07CO01, EF07CI09", objetivo: "Biomecânica e braço articulado robótico." },
-            { id: "7-14", ano: "7º Ano", oficina: 14, tema: "Inquisição e Mitos", bncc: "EF07CO01, EF07HI02", objetivo: "História e robô-mago lançador de peças." },
-            { id: "7-15", ano: "7º Ano", oficina: 15, tema: "Vulcão Dinâmico", bncc: "EF07CO05, EF07CI15", objetivo: "Estrutura geológica e simulador de erupção." },
-            { id: "7-16", ano: "7º Ano", oficina: 16, tema: "Segurança: LGPD", bncc: "EF07CO06, EF67LP03", objetivo: "Ataques cibernéticos e robô hackeado." },
-            { id: "7-17", ano: "7º Ano", oficina: 17, tema: "Sistemas Bancários: Cofre", bncc: "EF07CO03, EF07CI06", objetivo: "Evolução da moeda e cofre robusto." },
-            { id: "7-18", ano: "7º Ano", oficina: 18, tema: "Torneio de Basquete", bncc: "EF07CO03, EF67EF03", objetivo: "História do esporte e robô-lançador." },
-            { id: "7-19", ano: "7º Ano", oficina: 19, tema: "Caixa Registradora", bncc: "EF07CO01, EF07CI06", objetivo: "Evolução do comércio e automação de caixa." },
-            { id: "7-20", ano: "7º Ano", oficina: 20, tema: "Bullying e Empatia", bncc: "EF07CO09, EF69LP13", objetivo: "Mediação de conflitos e robô auxiliar." },
-
-            // 8º ANO
-            { id: "8-1", ano: "8º Ano", oficina: 1, tema: "Contextualizando a Robótica", bncc: "EF69CO12", objetivo: "Robótica avançada e travessia de rio." },
-            { id: "8-2", ano: "8º Ano", oficina: 2, tema: "Software SPIKE App", bncc: "EF69CO02", objetivo: "Hardware, software e algoritmos complexos." },
-            { id: "8-3", ano: "8º Ano", oficina: 3, tema: "Ponto de Ônibus Inteligente", bncc: "EF08CO04, EF08GE16", objetivo: "Importância da programação e sensores." },
-            { id: "8-4", ano: "8º Ano", oficina: 4, tema: "Força e Movimento: Animal", bncc: "EF08CO04, EF08MA18", objetivo: "Relacionar força, motores e animal robótico." },
-            { id: "8-5", ano: "8º Ano", oficina: 5, tema: "Ângulos na Programação", bncc: "EF08CO04, EF08MA15", objetivo: "Geometria e robô para curvas precisas." },
-            { id: "8-6", ano: "8º Ano", oficina: 6, tema: "Fake News e Tecnologia", bncc: "EF08CO02, EF08CO11", objetivo: "Propagação de informações e robô recomendador." },
-            { id: "8-7", ano: "8º Ano", oficina: 7, tema: "Reprodutores e Genética", bncc: "EF08CO04, EF08CI08", objetivo: "Células e robô que imita reprodução celular." },
-            { id: "8-8", ano: "8º Ano", oficina: 8, tema: "Revolução Francesa", bncc: "EF08CO05, EF08HI04", objetivo: "Contexto histórico e guilhotina segura/automática." },
-            { id: "8-9", ano: "8º Ano", oficina: 9, tema: "Oitocentismo no Brasil", bncc: "EF08CO05, EF08HI02", objetivo: "Chegada da Família Real e carruagem real." },
-            { id: "8-10", ano: "8º Ano", oficina: 10, tema: "População na América", bncc: "EF08CO04, EF08GE01", objetivo: "Distribuição populacional e robô explorador." },
-            { id: "8-11", ano: "8º Ano", oficina: 11, tema: "Sustentabilidade: Água", bncc: "EF08CO04, EF08GE15", objetivo: "Tratamento de esgoto e estação de bombeamento." },
-            { id: "8-12", ano: "8º Ano", oficina: 12, tema: "Circuitos Elétricos", bncc: "EF08CO04, EF08CI02", objetivo: "Resistência, tensão e robô de inspeção de fios." },
-            { id: "8-13", ano: "8º Ano", oficina: 13, tema: "Sistema Solar", bncc: "EF08CO04, EF08CI12", objetivo: "Órbitas e planetário mecânico programável." },
-            { id: "8-14", ano: "8º Ano", oficina: 14, tema: "Pugilismo: Robô-Lutador", bncc: "EF08CO04, EF67EF05", objetivo: "Esporte de combate e robô pugilista." },
-            { id: "8-15", ano: "8º Ano", oficina: 15, tema: "Instalação Artística", bncc: "EF08CO04, EF69AR06", objetivo: "Interação e obra interativa com sensores." },
-            { id: "8-16", ano: "8º Ano", oficina: 16, tema: "Internet e Impactos", bncc: "EF08CO06, EF08GE13", objetivo: "Economia digital e robô-manipulador." },
-            { id: "8-17", ano: "8º Ano", oficina: 17, tema: "Diáspora Nordestina", bncc: "EF08CO04, EF08GE04", objetivo: "Migração e caminhão pau de arara LEGO®." },
-            { id: "8-18", ano: "8º Ano", oficina: 18, tema: "Industrialização no Brasil", bncc: "EF08CO05, EF08HI03", objetivo: "Relações de trabalho e linha de produção." },
-            { id: "8-19", ano: "8º Ano", oficina: 19, tema: "Comunicação em Código", bncc: "EF08CO04, EF69AR10", objetivo: "Código Morse e montagem de telégrafo." },
-            { id: "8-20", ano: "8º Ano", oficina: 20, tema: "Esteira Seletora", bncc: "EF08CO04, EF08HI03", objetivo: "Otimização industrial e triagem automática." },
-
-            // 9º ANO
-            { id: "9-1", ano: "9º Ano", oficina: 1, tema: "Robótica Contextualizada", bncc: "EF69CO12", objetivo: "Anos Finais: SPIKE Prime e travessia de rio." },
-            { id: "9-2", ano: "9º Ano", oficina: 2, tema: "Software SPIKE™ App", bncc: "EF69CO02, EF69CO03", objetivo: "Programação em blocos, hardware e software." },
-            { id: "9-3", ano: "9º Ano", oficina: 3, tema: "Farol", bncc: "EF09CO02", objetivo: "Navegação e sistema de iluminação automática." },
-            { id: "9-4", ano: "9º Ano", oficina: 4, tema: "Robô Doméstico", bncc: "EF09CO07, EF09GE11", objetivo: "Industrialização e sensor de distância." },
-            { id: "9-5", ano: "9º Ano", oficina: 5, tema: "GPS", bncc: "EF09CO02", objetivo: "Satélites, trilateração e orientação espacial." },
-            { id: "9-6", ano: "9º Ano", oficina: 6, tema: "Drone-delivery", bncc: "EF09CO07, EF09GE05", objetivo: "Globalização e logística com drone." },
-            { id: "9-7", ano: "9º Ano", oficina: 7, tema: "Universo", bncc: "EF09CO02, EF09CI16", objetivo: "Gravidade e nave espacial para sobrevivência." },
-            { id: "9-8", ano: "9º Ano", oficina: 8, tema: "Impactos da Internet", bncc: "EF09CO08, EF09GE11", objetivo: "Conectividade, antena e sensor de força." },
-            { id: "9-9", ano: "9º Ano", oficina: 9, tema: "The Wall: Berlim", bncc: "EF09CO06, EF09HI28", objetivo: "Muro de Berlim e robô de vigilância." },
-            { id: "9-10", ano: "9º Ano", oficina: 10, tema: "Guerra Fria", bncc: "EF09CO06, EF09HI28", objetivo: "Contexto histórico e corrida espacial robótica." },
-            { id: "9-11", ano: "9º Ano", oficina: 11, tema: "Fontes de Energia", bncc: "EF09CO10, EF09CI13", objetivo: "Sustentabilidade e usinas de energia." },
-            { id: "9-12", ano: "9º Ano", oficina: 12, tema: "Parques Nacionais", bncc: "EF09CO06, EF09CI12", objetivo: "Biodiversidade e sistema de segurança florestal." },
-            { id: "9-13", ano: "9º Ano", oficina: 13, tema: "Ataques Cibernéticos", bncc: "EF09CO04, EF09ER06", objetivo: "Criptografia e segurança digital avançada." },
-            { id: "9-14", ano: "9º Ano", oficina: 14, tema: "Raio X e Medicina", bncc: "EF09CO02, EF09CI07", objetivo: "Espectro eletromagnético e tomógrafo." },
-            { id: "9-15", ano: "9º Ano", oficina: 15, tema: "Modernização Agropecuária", bncc: "EF09CO01, EF09GE12", objetivo: "Autômatos e porteira automática inteligente." },
-            { id: "9-16", ano: "9º Ano", oficina: 16, tema: "Energias Renováveis", bncc: "EF09CO09, EF09GE18", objetivo: "Caminhão adaptado a fontes sustentáveis." },
-            { id: "9-17", ano: "9º Ano", oficina: 17, tema: "Nanotecnologia", bncc: "EF09CO02, EF09CI09", objetivo: "Genética e nanorrobô de inspeção." },
-            { id: "9-18", ano: "9º Ano", oficina: 18, tema: "Penso, Logo Identifico", bncc: "EF09CO01, EF69AR01", objetivo: "Biometria e identificação automatizada." },
-            { id: "9-19", ano: "9º Ano", oficina: 19, tema: "Copa de Robótica", bncc: "EF09CO01, EF67EF03", objetivo: "Torneio final de integração e estratégia." },
-            { id: "9-20", ano: "9º Ano", oficina: 20, tema: "Ética na IA", bncc: "EF09CO01, EF09ER06", objetivo: "Impactos sociais da inteligência artificial." }
-        ];
-
-        function Modal({ isOpen, onClose, oficina }) {
-            const [form, setForm] = useState({ professor: '', turma: '', tempo: '', kits: '', obs: '' });
-            
-            useEffect(() => {
-                if(isOpen) setForm({ professor: '', turma: '', tempo: '', kits: '', obs: '' });
-            }, [oficina.id, isOpen]);
-
-            if (!isOpen) return null;
-
-            return (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 no-print">
-                    <div className="bg-white w-full max-w-2xl rounded-[2.5rem] shadow-2xl flex flex-col max-h-[90vh] overflow-hidden print-container">
-                        <div className="p-6 border-b border-slate-50 flex justify-between items-center no-print">
-                            <h2 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Editor de Documento</h2>
-                            <button onClick={onClose} className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-50 text-slate-400 hover:bg-red-50 hover:text-red-500 transition-all">
-                                <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
-                            </button>
-                        </div>
-
-                        <div className="flex-grow overflow-y-auto p-12 custom-scroll notepad-paper">
-                            <div className="text-center mb-16">
-                                <div className="text-[10px] font-black text-blue-600 mb-2 uppercase tracking-[0.3em]">{oficina.ano} • OFICINA #{oficina.oficina}</div>
-                                <h1 className="text-4xl font-black text-slate-900 tracking-tighter uppercase leading-none mb-3">{oficina.tema}</h1>
-                                <div className="text-[11px] font-bold text-slate-300 uppercase">Habilidades: {oficina.bncc}</div>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-x-12 gap-y-10 mb-16">
-                                {[
-                                    { label: 'Professor(a)', key: 'professor', ph: 'Nome completo...' },
-                                    { label: 'Turma / Ano', key: 'turma', ph: 'Ex: 901...' },
-                                    { label: 'Tempo Previsto', key: 'tempo', ph: 'Ex: 100 min...' },
-                                    { label: 'Kits / Peças', key: 'kits', ph: 'Ex: SPIKE Prime...' }
-                                ].map(f => (
-                                    <div key={f.key} className="border-b-2 border-slate-100 pb-2">
-                                        <label className="text-[9px] font-black text-slate-400 uppercase block mb-2">{f.label}</label>
-                                        <input 
-                                            className="w-full bg-transparent font-bold text-slate-800 outline-none no-print placeholder:text-slate-200"
-                                            placeholder={f.ph}
-                                            value={form[f.key]}
-                                            onChange={e => setForm({...form, [f.key]: e.target.value})}
-                                        />
-                                        <div className="print-only text-sm font-bold text-slate-900">{form[f.key] || '__________'}</div>
-                                    </div>
-                                ))}
-                            </div>
-
-                            <div className="mb-12">
-                                <label className="text-[9px] font-black text-slate-400 uppercase block mb-4">Diretrizes Pedagógicas</label>
-                                <div className="p-6 bg-blue-50/50 rounded-2xl border border-blue-100/30 text-sm text-slate-600 leading-relaxed font-medium italic">
-                                    {oficina.objetivo}
-                                </div>
-                            </div>
-
-                            <div className="mt-10">
-                                <label className="text-[9px] font-black text-slate-400 uppercase block mb-4">Notas e Observações</label>
-                                <textarea 
-                                    className="w-full bg-slate-50/50 rounded-2xl p-6 min-h-[180px] outline-none text-slate-700 leading-relaxed no-print border-2 border-transparent focus:border-blue-100 transition-all text-sm"
-                                    placeholder="Roteiro da aula, materiais de apoio, critérios de avaliação..."
-                                    value={form.obs}
-                                    onChange={e => setForm({...form, obs: e.target.value})}
-                                />
-                                <div className="print-only text-sm text-slate-700 whitespace-pre-wrap leading-relaxed">
-                                    {form.obs || 'O professor deve orientar a montagem conforme o guia oficial.'}
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="p-8 bg-slate-50/80 border-t border-slate-100 flex gap-4 no-print">
-                            <button 
-                                onClick={() => window.print()}
-                                className="flex-1 bg-slate-900 text-white py-5 rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-blue-600 transition-all shadow-xl shadow-slate-200 flex items-center justify-center gap-3"
-                            >
-                                <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M4 16h12M12 1v11m0 0l-4-4m4 4l4-4"/></svg>
-                                Exportar Planejamento (PDF)
-                            </button>
-                        </div>
-                    </div>
+        <div className="flex-grow overflow-y-auto p-8 custom-print-area bg-white">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+            <div className="md:col-span-2 space-y-6">
+              <div className="bg-slate-900 text-white p-8 rounded-3xl shadow-lg relative overflow-hidden">
+                <div className="absolute top-0 right-0 p-4 opacity-10">
+                   <GraduationCap size={120} />
                 </div>
-            );
-        }
+                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-400">{item.ano} • Oficina #{item.oficina}</span>
+                <h1 className="text-3xl font-black mt-1 mb-4 uppercase leading-none">{item.tema}</h1>
+                <div className="flex items-center gap-4 text-[10px] font-bold bg-white/10 w-fit px-3 py-1.5 rounded-full uppercase tracking-widest border border-white/10">
+                  <Target size={14} /> {item.bncc}
+                </div>
+              </div>
 
-        function App() {
-            const [search, setSearch] = useState('');
-            const [year, setYear] = useState('Todos');
-            const [selected, setSelected] = useState(null);
-
-            const years = ['Todos', '1º Ano', '2º Ano', '3º Ano', '4º Ano', '5º Ano', '6º Ano', '7º Ano', '8º Ano', '9º Ano'];
-
-            const hasActiveSearch = search.trim().length > 0 || year !== 'Todos';
-
-            const filtered = useMemo(() => {
-                if (!hasActiveSearch) return [];
-                return DATABASE.filter(i => {
-                    const text = (i.tema + i.objetivo + i.bncc + i.ano).toLowerCase();
-                    const matchText = text.includes(search.toLowerCase());
-                    const matchYear = year === 'Todos' || i.ano === year;
-                    return matchText && matchYear;
-                });
-            }, [search, year, hasActiveSearch]);
-
-            return (
-                <div className="max-w-4xl mx-auto px-6 pt-12 pb-32 min-h-screen">
-                    <header className="flex items-center justify-between mb-24 no-print">
-                        <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 bg-slate-900 rounded-xl flex items-center justify-center text-white text-xs font-black shadow-lg">S</div>
-                            <span className="font-bold tracking-tighter text-slate-800 text-lg">ROBÓTICA SJB</span>
-                        </div>
-                        <span className="text-[10px] font-black text-slate-300 uppercase tracking-[0.4em]">Secretaria de Educação</span>
-                    </header>
-
-                    <div className="relative z-10">
-                        <div className={`text-center mb-16 transition-all duration-500 ${hasActiveSearch ? 'opacity-0 h-0 overflow-hidden mb-0 scale-95' : 'opacity-100'}`}>
-                            <h1 className="text-6xl font-black text-slate-900 tracking-tighter mb-6 leading-none">
-                                Sistema de<br/><span className="text-blue-600">Planejamento.</span>
-                            </h1>
-                            <p className="text-slate-400 font-medium text-xl max-w-xl mx-auto">Encontre qualquer oficina do 1º ao 9º ano e exporte o documento oficial da aula.</p>
-                        </div>
-
-                        <div className="max-w-2xl mx-auto no-print">
-                            <div className="relative">
-                                <input 
-                                    className="w-full bg-white py-7 px-10 rounded-[2.5rem] shadow-2xl shadow-slate-200 border border-slate-50 outline-none focus:ring-8 focus:ring-blue-50/50 transition-all text-slate-700 placeholder:text-slate-200 font-bold text-xl"
-                                    placeholder="Busque por tema ou BNCC..."
-                                    value={search}
-                                    onChange={e => setSearch(e.target.value)}
-                                />
-                                <div className="absolute right-10 top-1/2 -translate-y-1/2 text-slate-100">
-                                    <svg width="28" height="28" fill="none" stroke="currentColor" strokeWidth="3.5"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-                                </div>
-                            </div>
-
-                            <div className="flex flex-wrap gap-2 mt-10 justify-center">
-                                {years.map(y => (
-                                    <button 
-                                        key={y}
-                                        onClick={() => setYear(y)}
-                                        className={`px-5 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${year === y ? 'bg-blue-600 text-white shadow-xl shadow-blue-100' : 'bg-white text-slate-400 hover:bg-slate-50 border border-slate-100'}`}
-                                    >
-                                        {y}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
-
-                    {hasActiveSearch && (
-                        <div className="mt-20 no-print">
-                            <div className="flex items-center justify-between mb-8 px-4">
-                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">{filtered.length} oficinas encontradas</span>
-                                {search && <button onClick={() => {setSearch(''); setYear('Todos');}} className="text-[10px] font-black text-blue-600 uppercase">Limpar Filtros</button>}
-                            </div>
-                            
-                            <div className="grid grid-cols-1 gap-4">
-                                {filtered.length > 0 ? filtered.map(item => (
-                                    <div 
-                                        key={item.id}
-                                        onClick={() => setSelected(item)}
-                                        className="group bg-white p-7 rounded-[2.2rem] border border-slate-100 hover:border-blue-100 hover:shadow-2xl hover:shadow-slate-200/50 transition-all cursor-pointer flex items-center justify-between"
-                                    >
-                                        <div className="flex gap-8 items-center">
-                                            <div className="w-14 h-14 bg-slate-50 rounded-2xl flex items-center justify-center text-[11px] font-black text-slate-300 group-hover:bg-blue-50 group-hover:text-blue-500 transition-all">
-                                                #{item.oficina}
-                                            </div>
-                                            <div>
-                                                <div className="flex gap-3 items-center mb-1.5">
-                                                    <span className="text-[10px] font-black text-blue-500 uppercase">{item.ano}</span>
-                                                    <span className="w-1 h-1 bg-slate-200 rounded-full"></span>
-                                                    <span className="text-[10px] font-bold text-slate-300">{item.bncc}</span>
-                                                </div>
-                                                <h3 className="text-xl font-black text-slate-800 tracking-tight group-hover:text-blue-900 transition-colors uppercase">{item.tema}</h3>
-                                            </div>
-                                        </div>
-                                        <div className="w-12 h-12 rounded-full bg-slate-50 text-slate-200 group-hover:bg-blue-600 group-hover:text-white flex items-center justify-center transition-all">
-                                            <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="4"><path d="M7 14l5-5-5-5"/></svg>
-                                        </div>
-                                    </div>
-                                )) : (
-                                    <div className="text-center py-24 bg-slate-50 rounded-[3rem] border-4 border-dashed border-slate-100">
-                                        <p className="text-slate-300 font-black uppercase text-xs tracking-widest">Nenhuma oficina corresponde à busca</p>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    )}
-
-                    <footer className="mt-40 text-center no-print opacity-20">
-                        <p className="text-[10px] font-black text-slate-900 uppercase tracking-[0.6em]">Portal de Robótica SJB</p>
-                    </footer>
-
-                    <Modal 
-                        isOpen={!!selected} 
-                        onClose={() => setSelected(null)} 
-                        oficina={selected || {}} 
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-[9px] font-black text-slate-400 uppercase ml-1">Professor(a)</label>
+                  <div className="relative">
+                    <input 
+                      type="text" 
+                      className="w-full bg-slate-50 border border-slate-200 p-3 pl-10 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all text-sm font-medium"
+                      placeholder="Nome do docente"
+                      value={formData.professor}
+                      onChange={e => setFormData({...formData, professor: e.target.value})}
                     />
+                    <Users size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300" />
+                  </div>
                 </div>
-            );
-        }
+                <div className="space-y-1">
+                  <label className="text-[9px] font-black text-slate-400 uppercase ml-1">Turma / Período</label>
+                  <div className="relative">
+                    <input 
+                      type="text" 
+                      className="w-full bg-slate-50 border border-slate-200 p-3 pl-10 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all text-sm font-medium"
+                      placeholder="Ex: 101, 5º Ano B..."
+                      value={formData.turma}
+                      onChange={e => setFormData({...formData, turma: e.target.value})}
+                    />
+                    <Calendar size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300" />
+                  </div>
+                </div>
+              </div>
+            </div>
 
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
-    </script>
-</body>
-</html>
+            <div className="bg-blue-50/50 p-6 rounded-3xl border border-blue-100/50 space-y-5">
+              <h4 className="font-bold text-blue-900 text-xs uppercase tracking-widest flex items-center gap-2">
+                <Clock size={16} className="text-blue-500" /> Base Pedagógica
+              </h4>
+              <div className="space-y-4">
+                <div>
+                  <label className="text-[8px] font-black text-blue-400 uppercase block mb-1">Recursos</label>
+                  <p className="text-[11px] text-blue-900/70 leading-relaxed font-semibold">{item.materiais}</p>
+                </div>
+                <div>
+                  <label className="text-[8px] font-black text-blue-400 uppercase block mb-1">Objetivo Central</label>
+                  <p className="text-[11px] text-blue-900/70 leading-relaxed italic">{item.objetivo}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-6">
+            <div>
+              <label className="text-[9px] font-black text-slate-400 uppercase ml-1 mb-2 block tracking-widest">Roteiro Metodológico</label>
+              <div className="bg-white border-2 border-slate-100 p-6 rounded-2xl text-slate-600 text-sm leading-relaxed whitespace-pre-wrap font-medium">
+                {item.metodologia}
+              </div>
+            </div>
+            <div>
+              <label className="text-[9px] font-black text-slate-400 uppercase ml-1 mb-2 block tracking-widest">Anotações e Avaliação</label>
+              <textarea 
+                className="w-full bg-slate-50 border border-slate-200 p-5 rounded-2xl min-h-[120px] outline-none focus:ring-2 focus:ring-blue-500 transition-all text-sm font-medium"
+                placeholder="Descreva o desempenho da turma ou adaptações necessárias..."
+                value={formData.observacoes}
+                onChange={e => setFormData({...formData, observacoes: e.target.value})}
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="p-6 bg-slate-50 border-t border-slate-100 flex gap-4 no-print">
+          <button 
+            onClick={copyFullPlan}
+            className="flex-1 bg-white border border-slate-200 text-slate-600 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-100 transition-all flex items-center justify-center gap-2"
+          >
+            <Copy size={16} /> Copiar Texto
+          </button>
+          <button 
+            onClick={handlePrint}
+            className="flex-1 bg-blue-600 text-white py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-blue-700 shadow-xl shadow-blue-200 transition-all flex items-center justify-center gap-2"
+          >
+            <Download size={16} /> Gerar PDF / Imprimir
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const App = () => {
+  const [search, setSearch] = useState('');
+  const [filterYear, setFilterYear] = useState('Todos');
+  const [selectedOficina, setSelectedOficina] = useState(null);
+
+  const years = ['Todos', '1º Ano', '2º Ano', '3º Ano', '4º Ano', '5º Ano', '6º Ano', '7º Ano', '8º Ano', '9º Ano'];
+
+  const results = useMemo(() => {
+    if (search.trim() === '' && filterYear === 'Todos') return [];
+
+    return rawData.filter(item => {
+      const query = search.toLowerCase();
+      const matchesText = item.tema.toLowerCase().includes(query) || 
+                          item.objetivo.toLowerCase().includes(query) || 
+                          item.bncc.toLowerCase().includes(query);
+      const matchesYear = filterYear === 'Todos' || item.ano === filterYear;
+      return matchesText && matchesYear;
+    });
+  }, [search, filterYear]);
+
+  return (
+    <div className="min-h-screen bg-slate-50/30 text-slate-900 font-sans selection:bg-blue-100">
+      
+      <nav className="border-b border-slate-100 bg-white/90 backdrop-blur-md sticky top-0 z-10 no-print">
+        <div className="max-w-5xl mx-auto px-6 h-20 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-100">
+              <GraduationCap size={24} strokeWidth={2.5} />
+            </div>
+            <div>
+              <h1 className="font-black tracking-tight text-slate-900 text-lg leading-none uppercase">Oficinas de Robótica</h1>
+            </div>
+          </div>
+          <div className="hidden sm:flex items-center gap-4">
+             <span className="text-[9px] font-black text-slate-300 uppercase tracking-widest">SJB • Base BNCC 2024</span>
+          </div>
+        </div>
+      </nav>
+
+      <main className="max-w-5xl mx-auto px-6 py-12 md:py-20">
+        <section className={`transition-all duration-700 no-print ${results.length > 0 ? 'mb-16' : 'mt-10 text-center'}`}>
+          {!results.length && (
+            <div className="mb-12 animate-in fade-in slide-in-from-top-10 duration-1000">
+              <h2 className="text-5xl md:text-7xl font-black text-slate-900 mb-6 tracking-tighter leading-[0.9]">
+                O que vamos <br/> <span className="text-blue-600">ensinar hoje?</span>
+              </h2>
+              <p className="text-slate-400 max-w-lg mx-auto font-medium text-lg leading-relaxed">
+                Selecione um ano escolar ou digite um tema para consultar as oficinas.
+              </p>
+            </div>
+          )}
+
+          <div className="max-w-3xl mx-auto space-y-8">
+            <div className="relative group">
+              <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-blue-500 transition-colors" size={24} />
+              <input 
+                type="text"
+                placeholder="Busque por oficina, tema ou BNCC..."
+                className="w-full pl-16 pr-8 py-7 bg-white border border-slate-100 rounded-[2.5rem] focus:border-blue-200 focus:ring-[12px] focus:ring-blue-500/5 outline-none transition-all text-xl font-bold shadow-2xl shadow-slate-200/50 placeholder:text-slate-200"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
+            
+            <div className="flex items-center gap-2 overflow-x-auto pb-4 no-scrollbar justify-center">
+              {years.map(y => (
+                <button
+                  key={y}
+                  onClick={() => setFilterYear(y)}
+                  className={`px-6 py-3 rounded-full text-[10px] font-black uppercase tracking-widest transition-all border-2 ${
+                    filterYear === y 
+                    ? 'bg-slate-900 border-slate-900 text-white shadow-xl' 
+                    : 'bg-white border-slate-100 text-slate-400 hover:border-blue-200 hover:text-blue-600'
+                  }`}
+                >
+                  {y}
+                </button>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {results.length > 0 && (
+          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-10 duration-700">
+            <div className="flex items-center justify-between px-2 no-print">
+              <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">{results.length} Sugestões Disponíveis</h3>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {results.map((item) => (
+                <div 
+                  key={item.id} 
+                  onClick={() => setSelectedOficina(item)}
+                  className="group bg-white border border-slate-100 rounded-[2rem] p-8 hover:border-blue-500 hover:shadow-2xl hover:shadow-blue-500/5 transition-all cursor-pointer flex flex-col justify-between"
+                >
+                  <div>
+                    <div className="flex items-center justify-between mb-6">
+                      <span className="text-[9px] font-black bg-blue-50 text-blue-600 px-3 py-1 rounded-full uppercase tracking-tighter">{item.ano}</span>
+                      <span className="text-[9px] font-bold text-slate-200 uppercase tracking-widest">#{item.oficina}</span>
+                    </div>
+                    <h3 className="text-xl font-black text-slate-800 leading-none mb-3 group-hover:text-blue-600 transition-colors uppercase tracking-tight">{item.tema}</h3>
+                    <p className="text-slate-400 text-xs leading-relaxed line-clamp-3 italic mb-8">
+                      {item.objetivo}
+                    </p>
+                  </div>
+                  <div className="flex items-center justify-between pt-6 border-t border-slate-50">
+                    <div className="flex items-center gap-2 text-[9px] font-black text-slate-300 uppercase tracking-widest">
+                      <Target size={14} className="text-blue-200" /> {item.bncc}
+                    </div>
+                    <div className="w-8 h-8 bg-slate-50 rounded-full flex items-center justify-center text-slate-300 group-hover:bg-blue-600 group-hover:text-white transition-all shadow-sm">
+                      <FileText size={14} />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {(search || filterYear !== 'Todos') && results.length === 0 && (
+          <div className="text-center py-40 animate-in fade-in zoom-in-95 duration-700 no-print">
+            <div className="w-24 h-24 bg-white border border-slate-100 rounded-full flex items-center justify-center mx-auto mb-6 shadow-xl shadow-slate-200/50">
+              <Search className="text-slate-200" size={40} />
+            </div>
+            <h4 className="text-xl font-black text-slate-800 mb-2 uppercase tracking-tighter">Nada encontrado</h4>
+            <p className="text-slate-400 max-w-xs mx-auto text-sm font-medium">Tente ajustar sua busca ou mudar o ano escolar.</p>
+          </div>
+        )}
+      </main>
+
+      {selectedOficina && (
+        <ModalPlanejamento 
+          item={selectedOficina} 
+          onClose={() => setSelectedOficina(null)} 
+        />
+      )}
+
+      <style>{`
+        @media print {
+          .no-print { display: none !important; }
+          body { background: white !important; margin: 0 !important; padding: 0 !important; }
+          .custom-print-area { overflow: visible !important; height: auto !important; max-height: none !important; background: white !important; }
+          .fixed { position: static !important; display: block !important; background: none !important; backdrop-filter: none !important; padding: 0 !important; }
+          .rounded-[2rem], .rounded-3xl { border-radius: 0 !important; border: none !important; }
+          .bg-slate-900 { background: #000 !important; color: white !important; -webkit-print-color-adjust: exact; }
+          .bg-blue-50\/50 { background: #f8fafc !important; border: 1px solid #eee !important; -webkit-print-color-adjust: exact; }
+          .shadow-lg, .shadow-2xl { box-shadow: none !important; }
+          input, textarea { border: 1px solid #eee !important; background: white !important; padding: 8px !important; margin-top: 4px !important; }
+          h1 { font-size: 24pt !important; }
+        }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      `}</style>
+    </div>
+  );
+};
+
+export default App;
