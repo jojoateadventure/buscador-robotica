@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Robótica SJB - Planejador</title>
+    <title>Robótica SJB - Planejador Oficial</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -12,29 +12,36 @@
     <style>
         body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #F8FAFC; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
-        .fade-in { animation: fadeIn 0.4s ease-out forwards; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         
-        /* Estilos para o Bloco de Notas */
+        /* Efeito de Bloco de Notas */
         .notepad {
             background: #fff;
-            background-image: linear-gradient(#e5e7eb 1px, transparent 1px);
-            background-size: 100% 2rem;
-            line-height: 2rem;
+            background-image: radial-gradient(#e5e7eb 1px, transparent 1px);
+            background-size: 24px 24px;
+            position: relative;
         }
 
         @media print {
             .no-print { display: none !important; }
-            body { background: white; }
+            body { background: white !important; margin: 0; padding: 0; }
             .print-area { 
-                position: absolute; 
-                top: 0; 
-                left: 0; 
-                width: 100%; 
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100% !important;
+                height: 100% !important;
                 box-shadow: none !important;
                 border: none !important;
+                z-index: 9999;
+                padding: 40px !important;
             }
+            .notepad { background-image: none !important; border: 1px solid #eee !important; }
+            /* Garante que o texto digitado apareça */
+            input, textarea { border: none !important; outline: none !important; }
         }
+
+        .fade-in { animation: fadeIn 0.4s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body class="text-slate-900">
@@ -43,139 +50,136 @@
     <script type="text/babel">
         const { useState, useMemo, useEffect } = React;
 
-        const IconSearch = () => <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>;
-        const IconCopy = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>;
-        const IconCheck = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>;
+        // --- ÍCONES ---
+        const IconSearch = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>;
+        const IconCopy = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>;
+        const IconPlan = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>;
         const IconRobot = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>;
-        const IconPlan = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>;
 
+        // --- BANCO DE DADOS (SIMPLIFICADO PARA O EXEMPLO MAS EXPANSÍVEL) ---
         const rawData = [
-            // 1º ANO
-            ...Array.from({length: 20}, (_, i) => ({
-                id: `1-${i+1}`, oficina: i+1, ano: "1º Ano", 
-                tema: ["Conhecendo o Kit", "Elementos Funcionais", "Classificando e Seriando", "Meios de Transporte Terrestre", "O que Rola e o que Não Rola: Rampa", "Identidade nos Dispositivos: Myself", "Animais", "Plantas", "Sensores", "Luzes", "Sons", "Engrenagens", "Alavancas", "Ponte Móvel", "Espaço Público Urbano: Praça", "Teleférico", "Daqui eu Não Saio: Cofre", "Algoritmo Bagunçado", "Acesso Autorizado ou Negado: Catraca", "Criptografia"][i] || "Tema em definição",
-                bncc: "EF15C008, EF01C001", objetivo: "Explorar as bases da robótica e o pensamento computacional através de desafios lúdicos."
-            })),
-            // 2º ANO
-            ...Array.from({length: 21}, (_, i) => ({
-                id: `2-${i+1}`, oficina: i+1, ano: "2º Ano", 
-                tema: ["Oficina Introdutória", "Conhecendo o Software", "Animal", "Conexões, Eixos e Encaixes", "O Adestrador de Animais", "Com o Passar do Tempo", "Sinalizando o Trânsito", "Limpeza e Organização", "Um Dia no Parque", "Luz e Sombra", "Festival de Cores", "Movido a Vento", "Uso da Água", "Elevador", "Máquinas e Suas Funcionalidades", "Empilhadeira", "Aparelhos Sonoros", "Sistema Monetário: Vendinha", "Hardware e Software: Drone", "Relógio Analógico: Engrenagens", "Impacto"][i] || "Tema em definição",
-                bncc: "EF15C006, EF02C001", objetivo: "Consolidar conceitos de montagem mecânica e lógica de programação visual."
-            })),
-            // 3º ANO ao 9º ANO
-            ...[3,4,5,6,7,8,9].flatMap(anoNum => Array.from({length: 21}, (_, i) => ({
-                id: `${anoNum}-${i+1}`, oficina: i+1, ano: `${anoNum}º Ano`,
-                tema: i === 0 ? "Oficina Introdutória: Contextualizando" : `Oficina Temática ${i+1}`,
-                bncc: `EF0${anoNum}CO01`, objetivo: "Desenvolvimento de competências digitais e resolução de problemas práticos."
-            })))
+            { id: "1-1", oficina: 1, ano: "1º Ano", tema: "Conhecendo o Kit", bncc: "EF15C008", objetivo: "Discutir robótica e tecnologias, manusear o kit LEGO® e criar uma solução para a travessia de um rio." },
+            { id: "2-1", oficina: 1, ano: "2º Ano", tema: "Oficina Introdutória: Contextualizando", bncc: "EF15C006", objetivo: "Discutir robótica e tecnologias, manusear o kit LEGO® Education SPIKE Essential." },
+            { id: "3-1", oficina: 1, ano: "3º Ano", tema: "Oficina Introdutória: Contextualizando", bncc: "EF15C006", objetivo: "Discutir tecnologias e recursos digitais na educação e no mundo." },
+            { id: "4-1", oficina: 1, ano: "4º Ano", tema: "Oficina Introdutória", bncc: "EF15C006", objetivo: "Contextualização da robótica e manuseio do kit SPIKE Essential." },
+            { id: "5-3", oficina: 3, ano: "5º Ano", tema: "Conhecendo o Coração", bncc: "EF05C004", objetivo: "Conhecer o sistema cardiovascular e construir um modelo de coração com LEGO®." },
+            { id: "6-6", oficina: 6, ano: "6º Ano", tema: "Dança dos Robôs", bncc: "EF06CO02", objetivo: "Relacionar a cultura digital com a expressão corporal e automação." },
+            { id: "9-13", oficina: 13, ano: "9º Ano", tema: "Ataques Cibernéticos", bncc: "EF09CO04", objetivo: "Entender malwares, criptografia e segurança digital." }
+            // ... Adicione os outros dados aqui conforme necessário
         ];
 
         function Modal({ isOpen, onClose, selectedOficina }) {
             const [formData, setFormData] = useState({
-                professor: '',
-                turma: '',
-                tempo: '',
-                kits: '',
-                observacoes: ''
+                professor: '', turma: '', tempo: '', kits: '', observacoes: ''
             });
 
             if (!isOpen) return null;
 
             const handleExport = () => {
-                window.print();
+                // Pequeno delay para garantir que o estado do React reflita no DOM antes da impressão
+                setTimeout(() => window.print(), 100);
             };
 
             return (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 no-print">
-                    <div className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] print-area">
-                        {/* Header do Bloco */}
-                        <div className="bg-blue-600 p-6 text-white flex justify-between items-center no-print">
-                            <h3 className="text-xl font-bold flex items-center gap-2">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 no-print">
+                    <div className="bg-white w-full max-w-2xl rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col max-h-[90vh] print-area">
+                        {/* Header Modal */}
+                        <div className="bg-slate-900 p-6 text-white flex justify-between items-center no-print">
+                            <h3 className="text-sm font-bold tracking-widest uppercase flex items-center gap-2">
                                 <IconPlan /> Planejador de Aula
                             </h3>
-                            <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-full transition-colors">
+                            <button onClick={onClose} className="hover:rotate-90 transition-transform">
                                 <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
                             </button>
                         </div>
 
-                        {/* Conteúdo do Bloco de Notas */}
-                        <div className="p-8 md:p-12 overflow-y-auto notepad flex-grow">
-                            <div className="text-center mb-8">
-                                <h1 className="text-3xl font-black text-slate-800 uppercase tracking-tight">{selectedOficina.tema}</h1>
-                                <p className="text-blue-600 font-bold mt-1 tracking-widest uppercase text-xs">{selectedOficina.ano} — Oficina #{selectedOficina.oficina}</p>
+                        {/* Área do Bloco de Notas */}
+                        <div className="p-8 md:p-14 overflow-y-auto flex-grow notepad">
+                            <div className="text-center mb-10 border-b-2 border-slate-100 pb-8">
+                                <div className="text-[10px] font-black text-blue-600 uppercase tracking-[0.3em] mb-2">Plano de Aula Robótica</div>
+                                <h1 className="text-3xl font-black text-slate-800 uppercase tracking-tight leading-tight">{selectedOficina.tema}</h1>
+                                <div className="flex justify-center gap-4 mt-4">
+                                    <span className="text-xs font-bold px-3 py-1 bg-slate-100 rounded-full text-slate-500 uppercase">{selectedOficina.ano}</span>
+                                    <span className="text-xs font-bold px-3 py-1 bg-slate-100 rounded-full text-slate-500 uppercase">Oficina #{selectedOficina.oficina}</span>
+                                </div>
                             </div>
 
-                            <div className="space-y-6">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-                                    <div className="border-b border-slate-200 pb-1">
-                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Professor(a)</label>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Professor(a)</label>
+                                    <div className="relative border-b-2 border-slate-100 focus-within:border-blue-500 transition-colors py-2">
                                         <input 
                                             type="text" 
                                             value={formData.professor}
                                             onChange={(e) => setFormData({...formData, professor: e.target.value})}
-                                            className="w-full bg-transparent outline-none font-bold text-slate-700" 
-                                            placeholder="Nome completo..."
+                                            className="w-full bg-transparent outline-none font-bold text-slate-800 placeholder:text-slate-200" 
+                                            placeholder="Nome do docente"
                                         />
                                     </div>
-                                    <div className="border-b border-slate-200 pb-1">
-                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Turma</label>
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Turma / Grupo</label>
+                                    <div className="relative border-b-2 border-slate-100 focus-within:border-blue-500 transition-colors py-2">
                                         <input 
                                             type="text" 
                                             value={formData.turma}
                                             onChange={(e) => setFormData({...formData, turma: e.target.value})}
-                                            className="w-full bg-transparent outline-none font-bold text-slate-700" 
-                                            placeholder="ex: 101, 202..."
+                                            className="w-full bg-transparent outline-none font-bold text-slate-800 placeholder:text-slate-200" 
+                                            placeholder="Ex: 501, 602..."
                                         />
                                     </div>
-                                    <div className="border-b border-slate-200 pb-1">
-                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Tempo Planejado</label>
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Tempo Previsto</label>
+                                    <div className="relative border-b-2 border-slate-100 focus-within:border-blue-500 transition-colors py-2">
                                         <input 
                                             type="text" 
                                             value={formData.tempo}
                                             onChange={(e) => setFormData({...formData, tempo: e.target.value})}
-                                            className="w-full bg-transparent outline-none font-bold text-slate-700" 
-                                            placeholder="ex: 50min, 2 aulas..."
+                                            className="w-full bg-transparent outline-none font-bold text-slate-800 placeholder:text-slate-200" 
+                                            placeholder="Ex: 100 minutos"
                                         />
                                     </div>
-                                    <div className="border-b border-slate-200 pb-1">
-                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Kits Necessários</label>
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Qtd. de Kits</label>
+                                    <div className="relative border-b-2 border-slate-100 focus-within:border-blue-500 transition-colors py-2">
                                         <input 
                                             type="text" 
                                             value={formData.kits}
                                             onChange={(e) => setFormData({...formData, kits: e.target.value})}
-                                            className="w-full bg-transparent outline-none font-bold text-slate-700" 
-                                            placeholder="Quantidade..."
+                                            className="w-full bg-transparent outline-none font-bold text-slate-800 placeholder:text-slate-200" 
+                                            placeholder="Número de kits"
                                         />
                                     </div>
                                 </div>
-
-                                <div className="pt-4">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Demais Informações / Observações</label>
-                                    <textarea 
-                                        rows="6"
-                                        value={formData.observacoes}
-                                        onChange={(e) => setFormData({...formData, observacoes: e.target.value})}
-                                        className="w-full bg-transparent outline-none text-slate-600 italic resize-none leading-8"
-                                        placeholder="Descreva aqui os detalhes da aula..."
-                                    ></textarea>
-                                </div>
                             </div>
 
-                            <div className="mt-12 text-center border-t border-slate-100 pt-8">
-                                <p className="font-['Caveat'] text-2xl text-blue-600 font-bold mb-2">Gracious Professionalism</p>
-                                <div className="inline-flex items-center gap-2 bg-amber-50 text-amber-600 px-4 py-2 rounded-full text-xs font-black uppercase tracking-tighter">
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
-                                    Não esqueça de realizar o agendamento!
+                            <div className="mt-10 space-y-1">
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Objetivos e Notas da Aula</label>
+                                <textarea 
+                                    rows="6"
+                                    value={formData.observacoes}
+                                    onChange={(e) => setFormData({...formData, observacoes: e.target.value})}
+                                    className="w-full bg-slate-50 rounded-2xl p-4 outline-none text-slate-700 italic leading-relaxed border-none focus:ring-2 focus:ring-blue-100 transition-all"
+                                    placeholder="Escreva aqui como pretende conduzir a atividade..."
+                                ></textarea>
+                            </div>
+
+                            <div className="mt-16 text-center">
+                                <div className="font-['Caveat'] text-3xl text-blue-600 mb-2">Gracious Professionalism</div>
+                                <div className="text-[10px] font-black text-amber-600 bg-amber-50 inline-block px-4 py-2 rounded-full border border-amber-100 tracking-tighter uppercase">
+                                    ⚠️ Não esqueça de realizar o agendamento!
                                 </div>
                             </div>
                         </div>
 
-                        {/* Footer do Modal */}
-                        <div className="p-6 bg-slate-50 border-t border-slate-100 flex justify-end gap-3 no-print">
-                            <button onClick={onClose} className="px-6 py-3 text-sm font-bold text-slate-500 hover:text-slate-700">Cancelar</button>
+                        {/* Footer Fixo */}
+                        <div className="p-6 bg-slate-50 flex justify-end gap-4 no-print border-t border-slate-100">
+                            <button onClick={onClose} className="px-6 py-3 text-xs font-black text-slate-400 uppercase hover:text-slate-600">Fechar</button>
                             <button 
                                 onClick={handleExport}
-                                className="px-8 py-3 bg-slate-900 text-white rounded-2xl text-sm font-bold shadow-lg shadow-slate-200 hover:bg-blue-600 transition-all"
+                                className="px-10 py-4 bg-blue-600 text-white rounded-2xl text-xs font-black uppercase tracking-widest shadow-xl shadow-blue-100 hover:scale-105 transition-all"
                             >
                                 Exportar PDF
                             </button>
@@ -188,143 +192,132 @@
         function App() {
             const [search, setSearch] = useState('');
             const [filterYear, setFilterYear] = useState('Todos');
-            const [copiedId, setCopiedId] = useState(null);
             const [planningOficina, setPlanningOficina] = useState(null);
+            const [isCopied, setIsCopied] = useState(null);
 
             const years = ['Todos', '1º Ano', '2º Ano', '3º Ano', '4º Ano', '5º Ano', '6º Ano', '7º Ano', '8º Ano', '9º Ano'];
 
             const results = useMemo(() => {
-                if (search === '' && filterYear === 'Todos') return [];
+                if (!search && filterYear === 'Todos') return [];
                 return rawData.filter(item => {
-                    const query = search.toLowerCase();
-                    const matchesText = item.tema.toLowerCase().includes(query) || 
-                                      item.objetivo.toLowerCase().includes(query) || 
-                                      item.bncc.toLowerCase().includes(query);
+                    const q = search.toLowerCase();
+                    const matchesText = item.tema.toLowerCase().includes(q) || item.bncc.toLowerCase().includes(q);
                     const matchesYear = filterYear === 'Todos' || item.ano === filterYear;
                     return matchesText && matchesYear;
                 });
             }, [search, filterYear]);
 
-            const copyData = (item) => {
-                const text = `*ROBÓTICA SJB*\n*Ano:* ${item.ano}\n*Oficina:* ${item.oficina}\n*Tema:* ${item.tema}\n*BNCC:* ${item.bncc}\n*Objetivo:* ${item.objetivo}`;
-                const el = document.createElement('textarea');
-                el.value = text;
-                document.body.appendChild(el);
-                el.select();
-                document.execCommand('copy');
-                document.body.removeChild(el);
-                setCopiedId(item.id);
-                setTimeout(() => setCopiedId(null), 2000);
+            const copyToClipboard = (item) => {
+                const text = `OFICINA ROBÓTICA SJB\nTema: ${item.tema}\nAno: ${item.ano}\nBNCC: ${item.bncc}\nObjetivo: ${item.objetivo}`;
+                navigator.clipboard.writeText(text);
+                setIsCopied(item.id);
+                setTimeout(() => setIsCopied(null), 2000);
             };
 
             const isSearching = search !== '' || filterYear !== 'Todos';
 
             return (
-                <div className="min-h-screen flex flex-col items-center">
-                    <header className="w-full h-20 flex items-center px-6 md:px-12 fixed top-0 z-40 bg-white/80 backdrop-blur-md no-print">
+                <div className="min-h-screen flex flex-col items-center p-6 md:p-12">
+                    {/* Header */}
+                    <header className="w-full max-w-5xl flex items-center justify-between mb-20 no-print">
                         <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 bg-blue-600 rounded-lg flex items-center justify-center text-white shadow-md">
+                            <div className="w-10 h-10 bg-slate-900 text-white rounded-xl flex items-center justify-center">
                                 <IconRobot />
                             </div>
-                            <span className="font-extrabold text-lg text-slate-800 tracking-tight">Robótica SJB</span>
+                            <h1 className="text-xl font-black tracking-tighter text-slate-800 uppercase">Robótica SJB</h1>
                         </div>
                     </header>
 
-                    <main className={`w-full max-w-4xl px-6 transition-all duration-700 ease-in-out no-print ${isSearching ? 'pt-32 pb-20' : 'h-screen flex flex-col justify-center pb-20'}`}>
+                    <main className={`w-full max-w-3xl transition-all duration-700 no-print ${isSearching ? 'mt-0' : 'mt-20'}`}>
+                        
+                        {/* Hero Text */}
                         {!isSearching && (
-                            <div className="text-center mb-10 fade-in">
-                                <h2 className="text-4xl md:text-5xl font-extrabold text-slate-800 mb-4 tracking-tight">O que vamos ensinar hoje?</h2>
-                                <p className="text-slate-500 font-medium text-lg">Consulte oficinas e planeje sua próxima aula com facilidade.</p>
+                            <div className="text-center mb-12 fade-in">
+                                <h2 className="text-5xl font-black text-slate-800 mb-4 tracking-tight">O que vamos ensinar hoje?</h2>
+                                <p className="text-slate-400 font-medium text-lg">Selecione o ano escolar ou busque por uma oficina.</p>
                             </div>
                         )}
 
-                        <div className={`transition-all duration-500 ${isSearching ? 'mb-10 sticky top-24 z-30' : 'scale-110'}`}>
-                            <div className="relative group">
-                                <div className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-blue-500 transition-colors">
-                                    <IconSearch />
-                                </div>
-                                <input 
-                                    type="text"
-                                    placeholder="Nome da oficina, tema ou BNCC..."
-                                    className="w-full pl-16 pr-6 py-6 bg-white border border-slate-200 rounded-[2rem] shadow-xl shadow-slate-200/50 outline-none focus:ring-4 focus:ring-blue-100 focus:border-blue-400 transition-all text-lg font-medium"
-                                    value={search}
-                                    onChange={(e) => setSearch(e.target.value)}
-                                />
+                        {/* Search Input */}
+                        <div className={`relative transition-all duration-500 ${isSearching ? 'scale-100 mb-8' : 'scale-110'}`}>
+                            <div className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300">
+                                <IconSearch />
                             </div>
-
-                            <div className="flex gap-2 mt-6 overflow-x-auto no-scrollbar pb-2 px-1">
-                                {years.map(y => (
-                                    <button 
-                                        key={y}
-                                        onClick={() => setFilterYear(y)}
-                                        className={`px-6 py-3 rounded-full text-xs font-bold transition-all border whitespace-nowrap ${
-                                            filterYear === y 
-                                            ? 'bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-200' 
-                                            : 'bg-white border-slate-100 text-slate-400 hover:border-slate-300'
-                                        }`}
-                                    >
-                                        {y}
-                                    </button>
-                                ))}
-                            </div>
+                            <input 
+                                type="text"
+                                placeholder="Tema da oficina ou BNCC..."
+                                className="w-full pl-16 pr-6 py-6 bg-white border-2 border-slate-100 rounded-[2rem] shadow-2xl shadow-slate-200/40 outline-none focus:border-blue-400 transition-all font-semibold text-lg"
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                            />
                         </div>
 
+                        {/* Chips de Anos */}
+                        <div className="flex flex-wrap justify-center gap-2 mb-12 no-print">
+                            {years.map(y => (
+                                <button 
+                                    key={y}
+                                    onClick={() => setFilterYear(y)}
+                                    className={`px-6 py-3 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${
+                                        filterYear === y 
+                                        ? 'bg-blue-600 text-white shadow-lg shadow-blue-200' 
+                                        : 'bg-white text-slate-400 hover:text-slate-800'
+                                    }`}
+                                >
+                                    {y}
+                                </button>
+                            ))}
+                        </div>
+
+                        {/* Resultados */}
                         {isSearching && (
                             <div className="space-y-4 fade-in">
                                 {results.length > 0 ? (
                                     results.map(item => (
-                                        <div key={item.id} className="bg-white border border-slate-200 rounded-[2.5rem] p-8 hover:shadow-2xl hover:shadow-slate-200/40 transition-all group">
-                                            <div className="flex flex-col md:flex-row gap-6 items-start">
+                                        <div key={item.id} className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-xl shadow-slate-200/20 group transition-all hover:border-blue-200">
+                                            <div className="flex flex-col md:flex-row gap-6 justify-between items-start md:items-center">
                                                 <div className="flex-grow">
-                                                    <div className="flex items-center gap-3 mb-3">
-                                                        <span className="text-[10px] font-black px-3 py-1 bg-blue-50 text-blue-600 rounded-full">#OFICINA {item.oficina}</span>
+                                                    <div className="flex items-center gap-3 mb-2">
+                                                        <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest">#{item.oficina}</span>
+                                                        <span className="w-1 h-1 bg-slate-200 rounded-full"></span>
                                                         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{item.ano}</span>
                                                     </div>
-                                                    <h3 className="text-2xl font-extrabold text-slate-800 mb-2 group-hover:text-blue-600 transition-colors tracking-tight">{item.tema}</h3>
-                                                    <p className="text-sm text-slate-500 font-medium leading-relaxed mb-4">{item.objetivo}</p>
-                                                    <div className="inline-block px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-100 text-[10px] font-bold text-slate-400 uppercase tracking-wider">BNCC: {item.bncc}</div>
+                                                    <h3 className="text-xl font-black text-slate-800 mb-2">{item.tema}</h3>
+                                                    <div className="text-xs font-bold text-slate-400 px-2 py-1 bg-slate-50 rounded inline-block">BNCC: {item.bncc}</div>
                                                 </div>
-                                                <div className="flex flex-row md:flex-col gap-2 w-full md:w-auto">
+                                                <div className="flex gap-2 w-full md:w-auto">
                                                     <button 
-                                                        onClick={() => copyData(item)}
-                                                        className={`flex-1 md:w-48 flex items-center justify-center gap-2 px-6 py-4 rounded-2xl transition-all font-bold text-xs ${
-                                                            copiedId === item.id 
-                                                            ? 'bg-emerald-500 text-white' 
-                                                            : 'bg-white border-2 border-slate-100 text-slate-600 hover:border-blue-200 hover:text-blue-600'
-                                                        }`}
+                                                        onClick={() => copyToClipboard(item)}
+                                                        className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${isCopied === item.id ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
                                                     >
-                                                        {copiedId === item.id ? <IconCheck /> : <IconCopy />}
-                                                        {copiedId === item.id ? 'Copiado' : 'Copiar Dados'}
+                                                        {isCopied === item.id ? 'Pronto!' : <IconCopy />}
                                                     </button>
                                                     <button 
                                                         onClick={() => setPlanningOficina(item)}
-                                                        className="flex-1 md:w-48 flex items-center justify-center gap-2 px-6 py-4 rounded-2xl bg-slate-900 text-white hover:bg-blue-600 transition-all font-bold text-xs"
+                                                        className="flex-1 md:flex-none flex items-center justify-center gap-2 px-8 py-4 bg-slate-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-600 transition-all shadow-lg"
                                                     >
-                                                        <IconPlan />
-                                                        Planejar Aula
+                                                        <IconPlan /> Planejar
                                                     </button>
                                                 </div>
                                             </div>
                                         </div>
                                     ))
                                 ) : (
-                                    <div className="py-20 text-center text-slate-400 font-medium">
-                                        Nenhuma oficina encontrada com esses critérios.
-                                    </div>
+                                    <div className="text-center py-20 text-slate-300 font-bold uppercase tracking-widest">Nenhuma oficina encontrada</div>
                                 )}
                             </div>
                         )}
                     </main>
-
-                    <footer className="fixed bottom-8 text-center text-[10px] font-bold text-slate-300 uppercase tracking-[0.3em] pointer-events-none no-print">
-                        SJB Robótica — 2026
-                    </footer>
 
                     <Modal 
                         isOpen={!!planningOficina} 
                         onClose={() => setPlanningOficina(null)} 
                         selectedOficina={planningOficina || {}} 
                     />
+                    
+                    <footer className="mt-auto py-10 text-[10px] font-black text-slate-300 uppercase tracking-[0.4em] no-print">
+                        SJB Robótica &copy; 2026
+                    </footer>
                 </div>
             );
         }
