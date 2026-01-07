@@ -16,15 +16,21 @@
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         
+        /* Classe específica para o rodapé oculto na tela */
+        .print-footer { display: none; }
+
         @media print {
             html, body {
                 height: auto !important;
                 overflow: visible !important;
+                background: white !important;
             }
 
+            /* Oculta tudo por padrão */
             body * { visibility: hidden; }
             .no-print { display: none !important; }
             
+            /* Exibe o modal e seu conteúdo */
             .modal-content-to-print, .modal-content-to-print * { visibility: visible; }
             
             .modal-content-to-print {
@@ -39,6 +45,16 @@
                 box-shadow: none !important;
                 max-height: none !important;
                 overflow: visible !important;
+            }
+            
+            /* Força a exibição do rodapé APENAS na impressão */
+            .print-footer { 
+                display: block !important; 
+                margin-top: 40px !important;
+                padding-top: 20px !important;
+                border-top: 2px solid #e2e8f0 !important;
+                text-align: center !important;
+                page-break-inside: avoid !important;
             }
             
             .print-border { 
@@ -59,6 +75,7 @@
                 -webkit-print-color-adjust: exact; 
             }
             input, textarea { display: none !important; }
+            /* Estilo para valores de input na impressão */
             .print-value { display: block !important; font-weight: bold; padding: 4px 0; border-bottom: 1px solid #ccc; }
         }
     </style>
@@ -76,7 +93,6 @@
             return <i data-lucide={name} className={className} style={{ width: size, height: size }}></i>;
         };
 
-        // DADOS (Mantidos conforme original)
         const getDatabaseFromSheets = () => {
             const kitEssential = "Kit LEGO® Education SPIKE Essential";
             const kitPrime = "Kit LEGO® Education SPIKE Prime";
@@ -375,12 +391,12 @@
                                 )}
                             </div>
 
-                            {/* RODAPÉ DO MODAL ATUALIZADO (Aparece apenas na impressão) */}
-                            <div className="hidden print-value mt-12 pt-8 border-t border-slate-100 text-center text-sm">
-                                <p className="font-bold text-slate-900 mb-2">
+                            {/* RODAPÉ EXCLUSIVO PARA IMPRESSÃO (Sem classes do Tailwind para evitar conflitos) */}
+                            <div className="print-footer">
+                                <p style={{fontWeight: 'bold', color: '#0f172a', marginBottom: '8px', fontSize: '14px'}}>
                                     Não se esqueça de realizar o agendamento dos kits de robótica e demais equipamentos.
                                 </p>
-                                <p className="font-bold text-slate-600">
+                                <p style={{fontWeight: 'bold', color: '#475569', fontSize: '14px'}}>
                                     Consulte o Livro do Professor para obter informações detalhadas sobre esta oficina. Nele, você encontrará o manual de montagem, que é essencial para o seu planejamento.
                                 </p>
                             </div>
@@ -412,7 +428,6 @@
                 });
             }, [search, filterYear]);
 
-            // Função para rolar o menu de anos
             const scroll = (direction) => {
                 if (scrollRef.current) {
                     const { current } = scrollRef;
@@ -444,7 +459,6 @@
                                     <input className="w-full px-16 py-6 bg-white border border-slate-100 rounded-[2.5rem] shadow-xl outline-none text-xl font-bold placeholder:text-slate-300" placeholder="Pesquisar oficina..." value={search} onChange={e => setSearch(e.target.value)} />
                                 </div>
                                 
-                                {/* MENU DE ANOS COM SETAS DE NAVEGAÇÃO */}
                                 <div className="relative flex items-center">
                                     <button 
                                         onClick={() => scroll('left')} 
@@ -504,8 +518,8 @@
             );
         };
 
-            const root = ReactDOM.createRoot(document.getElementById('root'));
-            root.render(<App />);
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
     </script>
 </body>
 </html>
