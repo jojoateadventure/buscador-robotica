@@ -20,40 +20,40 @@
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         
         @media print {
-            /* Oculta absolutamente tudo por padrão */
-            body * { visibility: hidden; }
+            /* Regra de Ouro: Esconde tudo o que não for o modal de planejamento */
+            body > *:not(#root) { display: none !important; }
+            #root > div > *:not(.modal-container) { display: none !important; }
             .no-print { display: none !important; }
-            
-            /* Torna visível apenas a área de planejamento e seus filhos */
-            .custom-print-area, .custom-print-area * {
-                visibility: visible;
-            }
 
-            /* Reposiciona a área de impressão para o topo da página */
-            .custom-print-area {
-                position: absolute;
-                left: 0;
-                top: 0;
-                width: 100%;
-                display: block !important;
+            /* Garante que o container do modal ocupe a página toda sem overlays */
+            .modal-container {
+                position: absolute !important;
+                left: 0 !important;
+                top: 0 !important;
+                width: 100% !important;
+                height: auto !important;
+                background: white !important;
                 padding: 0 !important;
                 margin: 0 !important;
+                display: block !important;
             }
 
-            /* Ajustes visuais para a impressão */
+            /* Remove bordas arredondadas e sombras para impressão limpa */
+            .rounded-[2rem], .rounded-3xl, .rounded-2xl { border-radius: 0.5rem !important; }
+            .shadow-2xl, .shadow-xl { box-shadow: none !important; }
+
+            /* Estilo dos blocos na impressão */
             .print-border { 
-                border: 1px solid #000 !important; 
-                border-radius: 8px !important; 
-                margin-bottom: 15px !important;
-                padding: 15px !important;
+                border: 1px solid #e2e8f0 !important; 
+                margin-bottom: 1rem !important;
                 page-break-inside: avoid;
             }
-            .bg-slate-900 { background: #000 !important; color: #fff !important; -webkit-print-color-adjust: exact; }
-            .bg-blue-50\/50 { background: #f1f5f9 !important; -webkit-print-color-adjust: exact; }
             
-            /* Remove sombras e fundos desnecessários */
-            .shadow-2xl, .shadow-xl { box-shadow: none !important; }
-            .bg-slate-900\/60 { background: transparent !important; }
+            .bg-slate-900 { background: #000 !important; color: #fff !important; -webkit-print-color-adjust: exact; }
+            .bg-blue-50\/50 { background: #f8fafc !important; border: 1px solid #e2e8f0 !important; -webkit-print-color-adjust: exact; }
+
+            /* Forçar visibilidade de textos de inputs */
+            .print-text { display: block !important; }
         }
     </style>
 </head>
@@ -110,14 +110,11 @@
                 observacoes: ''
             });
 
-            const copyFullPlan = () => {
-                const text = `PLANO DE AULA - OFICINAS DE ROBÓTICA\nTEMA: ${item.tema}\nANO: ${item.ano} | OFICINA: #${item.oficina}\nBNCC: ${item.bncc}\nPROFESSOR: ${formData.professor}\nTURMA: ${formData.turma}\nDATA: ${formData.data}\nOBJETIVOS: ${item.objetivo}\nMETODOLOGIA: ${item.metodologia}\nMATERIAIS: ${item.materiais}\nOBSERVAÇÕES: ${formData.observacoes}`;
-                navigator.clipboard.writeText(text).then(() => alert("Copiado com sucesso!"));
-            };
-
             return (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md no-print">
-                    <div className="bg-white w-full max-w-4xl max-h-[90vh] rounded-[2rem] shadow-2xl overflow-hidden flex flex-col">
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md no-print modal-container">
+                    <div className="bg-white w-full max-w-4xl max-h-[90vh] rounded-[2rem] shadow-2xl overflow-hidden flex flex-col print:max-h-none print:shadow-none print:rounded-none">
+                        
+                        {/* Header Modal - Oculto na Impressão */}
                         <div className="px-8 py-5 border-b flex justify-between items-center bg-slate-50 no-print">
                             <h2 className="font-bold text-slate-800 flex items-center gap-2">
                                 <Icon name="file-text" className="text-blue-600" /> Novo Planejamento
@@ -127,7 +124,8 @@
                             </button>
                         </div>
 
-                        <div className="flex-grow overflow-y-auto p-8 custom-print-area">
+                        {/* Área de Conteúdo - Esta é a custom-print-area */}
+                        <div className="flex-grow overflow-y-auto p-8 custom-print-area print:overflow-visible">
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
                                 <div className="md:col-span-2 space-y-6">
                                     <div className="bg-slate-900 text-white p-8 rounded-3xl relative overflow-hidden print-border">
@@ -138,7 +136,6 @@
                                         </div>
                                     </div>
                                     
-                                    {/* Campos de Input - Ocultos na impressão por padrão mas seus valores devem aparecer se usarmos spans */}
                                     <div className="grid grid-cols-2 gap-4 no-print">
                                         <input 
                                             className="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl outline-none" 
@@ -154,8 +151,7 @@
                                         />
                                     </div>
 
-                                    {/* Exibição apenas para impressão dos dados preenchidos */}
-                                    <div className="hidden print:block space-y-2 mt-4">
+                                    <div className="hidden print:block space-y-2 text-slate-800 border-b pb-4">
                                         <p className="text-sm"><strong>Professor:</strong> {formData.professor || '____________________'}</p>
                                         <p className="text-sm"><strong>Turma:</strong> {formData.turma || '____________________'}</p>
                                         <p className="text-sm"><strong>Data:</strong> {formData.data}</p>
@@ -168,6 +164,7 @@
                                     <p className="text-[11px] text-blue-900/70 leading-relaxed italic">{item.objetivo}</p>
                                 </div>
                             </div>
+
                             <div className="space-y-6">
                                 <div className="bg-white border-2 border-slate-100 p-6 rounded-2xl text-slate-600 text-sm whitespace-pre-wrap print-border">
                                     <span className="font-black text-[9px] uppercase block mb-2 text-slate-400">Roteiro</span>
@@ -177,23 +174,39 @@
                                     <span className="font-black text-[9px] uppercase block mb-2 text-slate-400">Materiais</span>
                                     {item.materiais}
                                 </div>
-                                {formData.observacoes && (
-                                    <div className="bg-white border-2 border-slate-100 p-6 rounded-2xl text-slate-600 text-sm whitespace-pre-wrap print-border">
-                                        <span className="font-black text-[9px] uppercase block mb-2 text-slate-400">Anotações</span>
-                                        {formData.observacoes}
-                                    </div>
-                                )}
+                                
                                 <textarea 
                                     className="w-full bg-slate-50 border border-slate-200 p-5 rounded-2xl min-h-[100px] no-print"
                                     placeholder="Observações adicionais..."
                                     value={formData.observacoes}
                                     onChange={e => setFormData({...formData, observacoes: e.target.value})}
                                 />
+
+                                {formData.observacoes && (
+                                    <div className="hidden print:block bg-white border border-slate-200 p-6 rounded-xl text-slate-600 text-sm whitespace-pre-wrap">
+                                        <span className="font-black text-[9px] uppercase block mb-2 text-slate-400">Observações do Docente</span>
+                                        {formData.observacoes}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Mensagem de Rodapé para Impressão */}
+                            <div className="hidden print:block mt-12 pt-6 border-t border-slate-200 text-center">
+                                <p className="text-xs font-bold text-slate-500 italic">
+                                    Não esqueça de realizar o agendamento dos kits de robótica e demais equipamento.
+                                </p>
                             </div>
                         </div>
 
+                        {/* Footer Modal - Oculto na Impressão */}
                         <div className="p-6 bg-slate-50 border-t flex gap-4 no-print">
-                            <button onClick={copyFullPlan} className="flex-1 bg-white border p-4 rounded-2xl font-black text-[10px] uppercase flex items-center justify-center gap-2">
+                            <button 
+                                onClick={() => {
+                                    const text = `PLANO: ${item.tema}\nANO: ${item.ano}\nPROFESSOR: ${formData.professor}\nTURMA: ${formData.turma}\nMETODOLOGIA: ${item.metodologia}`;
+                                    navigator.clipboard.writeText(text).then(() => alert("Copiado!"));
+                                }} 
+                                className="flex-1 bg-white border p-4 rounded-2xl font-black text-[10px] uppercase flex items-center justify-center gap-2"
+                            >
                                 <Icon name="copy" /> Copiar Texto
                             </button>
                             <button onClick={() => window.print()} className="flex-1 bg-blue-600 text-white p-4 rounded-2xl font-black text-[10px] uppercase flex items-center justify-center gap-2">
@@ -221,7 +234,7 @@
             }, [search, filterYear]);
 
             return (
-                <div className="min-h-screen">
+                <div className="min-h-screen flex flex-col">
                     <nav className="border-b bg-white sticky top-0 z-10 no-print">
                         <div className="max-w-5xl mx-auto px-6 h-20 flex items-center gap-3">
                             <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white">
@@ -231,7 +244,7 @@
                         </div>
                     </nav>
 
-                    <main className="max-w-5xl mx-auto px-6 py-12">
+                    <main className="max-w-5xl mx-auto px-6 py-12 flex-grow">
                         <section className={`text-center no-print ${results.length > 0 ? 'mb-12' : 'mt-20'}`}>
                             {!results.length && (
                                 <div className="mb-10">
