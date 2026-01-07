@@ -18,10 +18,42 @@
         body { font-family: 'Inter', sans-serif; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
         @media print {
+            /* Oculta absolutamente tudo por padrão */
+            body * { visibility: hidden; }
             .no-print { display: none !important; }
-            .custom-print-area { display: block !important; padding: 20px !important; }
-            .print-border { border: 1px solid #e2e8f0 !important; border-radius: 1rem !important; margin-bottom: 20px !important; }
+            
+            /* Torna visível apenas a área de planejamento e seus filhos */
+            .custom-print-area, .custom-print-area * {
+                visibility: visible;
+            }
+
+            /* Reposiciona a área de impressão para o topo da página */
+            .custom-print-area {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                display: block !important;
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+
+            /* Ajustes visuais para a impressão */
+            .print-border { 
+                border: 1px solid #000 !important; 
+                border-radius: 8px !important; 
+                margin-bottom: 15px !important;
+                padding: 15px !important;
+                page-break-inside: avoid;
+            }
+            .bg-slate-900 { background: #000 !important; color: #fff !important; -webkit-print-color-adjust: exact; }
+            .bg-blue-50\/50 { background: #f1f5f9 !important; -webkit-print-color-adjust: exact; }
+            
+            /* Remove sombras e fundos desnecessários */
+            .shadow-2xl, .shadow-xl { box-shadow: none !important; }
+            .bg-slate-900\/60 { background: transparent !important; }
         }
     </style>
 </head>
@@ -31,7 +63,6 @@
     <script type="text/babel">
         const { useState, useMemo, useEffect } = React;
 
-        // Ícones auxiliares
         const Icon = ({ name, size = 20, className = "" }) => {
             useEffect(() => {
                 if (window.lucide) window.lucide.createIcons();
@@ -39,7 +70,6 @@
             return <i data-lucide={name} className={className} style={{ width: size, height: size }}></i>;
         };
 
-        // Gerador de Banco de Dados
         const generateFullDatabase = () => {
             const db = [];
             const years = ["1º Ano", "2º Ano", "3º Ano", "4º Ano", "5º Ano", "6º Ano", "7º Ano", "8º Ano", "9º Ano"];
@@ -88,7 +118,7 @@
             return (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md no-print">
                     <div className="bg-white w-full max-w-4xl max-h-[90vh] rounded-[2rem] shadow-2xl overflow-hidden flex flex-col">
-                        <div className="px-8 py-5 border-b flex justify-between items-center bg-slate-50">
+                        <div className="px-8 py-5 border-b flex justify-between items-center bg-slate-50 no-print">
                             <h2 className="font-bold text-slate-800 flex items-center gap-2">
                                 <Icon name="file-text" className="text-blue-600" /> Novo Planejamento
                             </h2>
@@ -107,17 +137,28 @@
                                             <Icon name="target" size={14} /> {item.bncc}
                                         </div>
                                     </div>
+                                    
+                                    {/* Campos de Input - Ocultos na impressão por padrão mas seus valores devem aparecer se usarmos spans */}
                                     <div className="grid grid-cols-2 gap-4 no-print">
                                         <input 
                                             className="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl outline-none" 
                                             placeholder="Nome do docente"
+                                            value={formData.professor}
                                             onChange={e => setFormData({...formData, professor: e.target.value})}
                                         />
                                         <input 
                                             className="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl outline-none" 
                                             placeholder="Turma / Período"
+                                            value={formData.turma}
                                             onChange={e => setFormData({...formData, turma: e.target.value})}
                                         />
+                                    </div>
+
+                                    {/* Exibição apenas para impressão dos dados preenchidos */}
+                                    <div className="hidden print:block space-y-2 mt-4">
+                                        <p className="text-sm"><strong>Professor:</strong> {formData.professor || '____________________'}</p>
+                                        <p className="text-sm"><strong>Turma:</strong> {formData.turma || '____________________'}</p>
+                                        <p className="text-sm"><strong>Data:</strong> {formData.data}</p>
                                     </div>
                                 </div>
                                 <div className="bg-blue-50/50 p-6 rounded-3xl border border-blue-100 space-y-4 print-border">
@@ -132,9 +173,20 @@
                                     <span className="font-black text-[9px] uppercase block mb-2 text-slate-400">Roteiro</span>
                                     {item.metodologia}
                                 </div>
+                                <div className="bg-white border-2 border-slate-100 p-6 rounded-2xl text-slate-600 text-sm whitespace-pre-wrap print-border">
+                                    <span className="font-black text-[9px] uppercase block mb-2 text-slate-400">Materiais</span>
+                                    {item.materiais}
+                                </div>
+                                {formData.observacoes && (
+                                    <div className="bg-white border-2 border-slate-100 p-6 rounded-2xl text-slate-600 text-sm whitespace-pre-wrap print-border">
+                                        <span className="font-black text-[9px] uppercase block mb-2 text-slate-400">Anotações</span>
+                                        {formData.observacoes}
+                                    </div>
+                                )}
                                 <textarea 
                                     className="w-full bg-slate-50 border border-slate-200 p-5 rounded-2xl min-h-[100px] no-print"
                                     placeholder="Observações adicionais..."
+                                    value={formData.observacoes}
                                     onChange={e => setFormData({...formData, observacoes: e.target.value})}
                                 />
                             </div>
@@ -206,7 +258,7 @@
 
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             {results.map(item => (
-                                <div key={item.id} onClick={() => setSelected(item)} className="bg-white border rounded-[2rem] p-8 hover:border-blue-500 cursor-pointer transition-all flex flex-col justify-between group">
+                                <div key={item.id} onClick={() => setSelected(item)} className="bg-white border rounded-[2rem] p-8 hover:border-blue-500 cursor-pointer transition-all flex flex-col justify-between group no-print">
                                     <div>
                                         <div className="flex justify-between mb-4">
                                             <span className="text-[9px] font-black bg-blue-50 text-blue-600 px-3 py-1 rounded-full">{item.ano}</span>
