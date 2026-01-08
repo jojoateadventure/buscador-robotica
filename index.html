@@ -74,32 +74,27 @@
 
             /* POSICIONA O MODAL NO TOPO DA PÁGINA IMPRESSA */
             .modal-content-to-print {
-                position: absolute !important;
-                left: 0 !important;
-                top: 0 !important;
+                position: relative !important;
                 width: 100% !important;
                 margin: 0 !important;
                 padding: 0 !important;
-                /* Margem inferior para o texto não bater no rodapé fixo */
-                padding-bottom: 80px !important; 
                 background: transparent !important;
                 border: none !important;
                 display: block !important;
             }
 
-            /* CONFIGURAÇÃO DO RODAPÉ FIXO */
+            /* CONFIGURAÇÃO DO RODAPÉ (NO FLUXO DO TEXTO PARA EVITAR TRANSPARÊNCIA) */
             .print-footer { 
                 visibility: visible !important;
                 display: block !important; 
-                position: fixed !important;
-                bottom: 0 !important;
-                left: 0 !important;
+                margin-top: 40px !important; /* Espaço para separar do conteúdo */
                 width: 100% !important;
                 background-color: white !important;
-                padding: 10px 0 !important;
-                border-top: 1px solid #cbd5e1 !important;
+                color: black !important;
+                padding: 20px 0 !important;
+                border-top: 2px solid #cbd5e1 !important;
                 text-align: center !important;
-                z-index: 9999 !important; /* Garante que fique sobre tudo */
+                page-break-inside: avoid !important; /* Não quebra o rodapé ao meio */
             }
             
             /* ESTILOS ESPECÍFICOS DE IMPRESSÃO PARA ELEMENTOS */
@@ -111,17 +106,29 @@
                 page-break-inside: avoid; /* Evita quebrar caixas ao meio */
             }
             
+            /* CAIXA DE TÍTULO - PRETA */
             .bg-slate-900 { 
-                background: #000 !important; 
-                color: #fff !important; 
+                background: #000000 !important; 
+                color: #ffffff !important; 
                 padding: 15px !important;
                 border-radius: 8px !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            .bg-slate-900 * {
+                color: #ffffff !important;
             }
             
+            /* CAIXA DE OBJETIVOS - CINZA CLARO */
             .bg-blue-50\/50 { 
-                background: #f8fafc !important; 
-                border: 1px solid #cbd5e1 !important; 
+                background: #e5e5e5 !important; /* Cinza claro */
+                border: 1px solid #d4d4d4 !important; 
                 padding: 10px !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            .bg-blue-50\/50 * {
+                color: #000000 !important; /* Texto preto para contraste */
             }
             
             /* Ajustes de tipografia na impressão */
@@ -446,10 +453,10 @@
                                 )}
                             </div>
 
-                            {/* RODAPÉ EXCLUSIVO PARA IMPRESSÃO (Sem negrito e fixo) */}
+                            {/* RODAPÉ EXCLUSIVO PARA IMPRESSÃO (NO FLUXO NORMAL) */}
                             <div className="print-footer">
                                 <p style={{color: '#0f172a', marginBottom: '8px', fontSize: '12px'}}>
-                                    Não se esqueça de realizar o agendamento dos kits de robótica e demais equipamentos.
+                                    Não se esqueça de realizar o agendamento dos kits de robótica e demais equipamentos!
                                 </p>
                                 <p style={{color: '#475569', fontSize: '12px'}}>
                                     Consulte o Livro do Professor para obter informações detalhadas sobre esta oficina. Nele, você encontrará o manual de montagem, que é essencial para o seu planejamento.
