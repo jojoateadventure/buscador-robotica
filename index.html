@@ -16,17 +16,32 @@
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         
-        /* Classe específica para o rodapé oculto na tela */
+        /* Animação de entrada para fluidez na pesquisa */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-card {
+            animation: fadeIn 0.4s ease-out forwards;
+        }
+
+        /* Classe específica para o rodapé oculto na tela normal */
         .print-footer { display: none; }
 
         @media print {
-            /* RESETA CONTEXTOS DE POSICIONAMENTO PARA O FIXED FUNCIONAR */
+            @page {
+                margin: 1cm;
+                size: auto;
+            }
+
+            /* RESETA CONTEXTOS */
             body, #root, div {
                 backdrop-filter: none !important;
                 -webkit-backdrop-filter: none !important;
                 transform: none !important;
                 filter: none !important;
                 perspective: none !important;
+                box-shadow: none !important;
             }
 
             html, body {
@@ -35,35 +50,51 @@
                 background: white !important;
                 margin: 0 !important;
                 padding: 0 !important;
+                /* Garante espaço no fim da página para o rodapé não cobrir texto */
+                padding-bottom: 2cm !important; 
+                font-size: 12px !important; /* Reduz fonte base */
             }
 
-            /* Oculta tudo por padrão */
-            body * { visibility: hidden; }
+            /* Oculta interface padrão */
+            body > *:not(#root) { display: none !important; }
+            #root > * { display: none !important; }
             .no-print { display: none !important; }
             
-            /* Exibe o modal e seu conteúdo */
-            .modal-content-to-print, .modal-content-to-print * { visibility: visible; }
-            
-            .modal-content-to-print {
-                position: absolute !important;
-                left: 0 !important;
-                top: 0 !important;
-                width: 100% !important;
+            /* Lógica do Modal para Impressão */
+            .fixed.inset-0 {
+                position: static !important;
+                background: white !important;
+                padding: 0 !important;
                 display: block !important;
-                padding: 20px !important;
-                /* Espaço extra no final do conteúdo para não bater no rodapé fixo */
-                padding-bottom: 100px !important; 
+            }
+
+            .modal-content-to-print {
+                position: relative !important;
+                width: 100% !important;
+                left: auto !important;
+                top: auto !important;
+                display: block !important;
+                padding: 0 !important;
                 margin: 0 !important;
                 background: white !important;
                 box-shadow: none !important;
+                border: none !important;
                 max-height: none !important;
                 overflow: visible !important;
-                border: none !important;
+                visibility: visible !important;
             }
             
-            /* Força a exibição do rodapé FIXO no fundo de TODAS as páginas */
-            .print-footer { 
+            .modal-content-to-print * {
                 visibility: visible !important;
+            }
+
+            /* Ajustes de Fonte para Economia de Espaço */
+            h1 { font-size: 18px !important; margin-bottom: 10px !important; }
+            h2, h3, h4 { font-size: 14px !important; }
+            p, span, div { font-size: 11px !important; line-height: 1.4 !important; }
+            
+            /* RODAPÉ FIXO */
+            .print-footer { 
                 display: block !important; 
                 position: fixed !important;
                 bottom: 0 !important;
@@ -71,32 +102,35 @@
                 right: 0 !important;
                 width: 100% !important;
                 background-color: white !important;
-                padding: 10px 40px 20px 40px !important;
+                padding: 10px 0 !important;
                 border-top: 2px solid #cbd5e1 !important;
                 text-align: center !important;
-                z-index: 2147483647 !important; /* Z-index máximo */
+                z-index: 9999 !important;
             }
             
             .print-border { 
                 border: 1px solid #e2e8f0 !important; 
-                border-radius: 8px !important;
-                margin-bottom: 12px !important;
+                border-radius: 6px !important;
+                margin-bottom: 10px !important;
+                padding: 12px !important;
                 page-break-inside: avoid;
             }
+            
             .bg-slate-900 { 
                 background: #000 !important; 
                 color: #fff !important; 
-                -webkit-print-color-adjust: exact; 
-                padding: 20px !important;
+                padding: 15px !important;
+                border-radius: 8px !important;
             }
+            
             .bg-blue-50\/50 { 
                 background: #f8fafc !important; 
                 border: 1px solid #e2e8f0 !important; 
-                -webkit-print-color-adjust: exact; 
+                padding: 10px !important;
             }
+            
             input, textarea { display: none !important; }
-            /* Estilo para valores de input na impressão */
-            .print-value { display: block !important; font-weight: bold; padding: 4px 0; border-bottom: 1px solid #ccc; }
+            .print-value { display: block !important; font-weight: bold; padding: 2px 0; border-bottom: 1px solid #ccc; }
         }
     </style>
 </head>
