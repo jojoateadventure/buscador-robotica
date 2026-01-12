@@ -147,10 +147,8 @@
     <script type="text/babel">
         const { useState, useMemo, useEffect, useRef } = React;
 
+        // CORREÇÃO: Removemos o useEffect daqui para evitar renderizações excessivas (loop de redraw)
         const Icon = ({ name, size = 20, className = "" }) => {
-            useEffect(() => {
-                if (window.lucide) window.lucide.createIcons();
-            }, [name]);
             return <i data-lucide={name} className={className} style={{ width: size, height: size }}></i>;
         };
 
@@ -489,6 +487,13 @@
                     return matchesText && matchesYear;
                 });
             }, [search, filterYear]);
+
+            // CORREÇÃO: Atualiza os ícones globalmente apenas quando os resultados ou a seleção mudam
+            useEffect(() => {
+                if (window.lucide) {
+                    window.lucide.createIcons();
+                }
+            }); // Sem array de dependência propositalmente, para garantir que ícones sejam renderizados após qualquer re-render do React
 
             const scroll = (direction) => {
                 if (scrollRef.current) {
